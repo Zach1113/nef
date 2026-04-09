@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/free5gc/nef/internal/logger"
@@ -439,6 +440,22 @@ func validateTrafficInfluenceData(
 			ProblemDetailsMalformedReqSyntax(
 				"Missing one of Gpsi, Ipv4Addr, Ipv6Addr, ExternalGroupId, AnyUeInd")
 		return pd
+	}
+
+	if len(tiSub.TrafficRoutes) == 0 {
+		pd := openapi.
+			ProblemDetailsMalformedReqSyntax(
+				"Missing trafficRoutes")
+		return pd
+	}
+
+	for i, route := range tiSub.TrafficRoutes {
+		if route == nil {
+			pd := openapi.
+				ProblemDetailsMalformedReqSyntax(
+					fmt.Sprintf("Illegal null route element at index %d", i))
+			return pd
+		}
 	}
 	return nil
 }

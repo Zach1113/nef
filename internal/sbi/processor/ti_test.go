@@ -130,6 +130,37 @@ var (
 		},
 	}
 
+	tiSub6ForAf1 = models.NefTrafficInfluSub{
+		AfServiceId: "Service6",
+		AfAppId:     "App6",
+		Ipv4Addr:    "10.60.0.11",
+		TrafficFilters: []models.FlowInfo{
+			{
+				FlowId: 1,
+				FlowDescriptions: []string{
+					"permit out ip from 192.168.0.24 to 10.60.0.11",
+				},
+			},
+		},
+	}
+
+	tiSub7ForAf1 = models.NefTrafficInfluSub{
+		AfServiceId: "Service7",
+		AfAppId:     "App7",
+		Ipv4Addr:    "10.60.0.12",
+		TrafficFilters: []models.FlowInfo{
+			{
+				FlowId: 1,
+				FlowDescriptions: []string{
+					"permit out ip from 192.168.0.26 to 10.60.0.12",
+				},
+			},
+		},
+		TrafficRoutes: []*models.RouteToLocation{
+			nil,
+		},
+	}
+
 	tiSubPatch1ForAf1 = models.NefTrafficInfluSubPatch{
 		TrafficFilters: []models.FlowInfo{
 			{
@@ -344,6 +375,32 @@ func TestPostTrafficInfluenceSubscription(t *testing.T) {
 					Status: http.StatusBadRequest,
 					Title:  "Malformed request syntax",
 					Detail: "Missing one of Gpsi, Ipv4Addr, Ipv6Addr, ExternalGroupId, AnyUeInd",
+				},
+			},
+		},
+		{
+			description: "TC5: Missing trafficRoutes",
+			afID:        "af1",
+			tiSub:       &tiSub6ForAf1,
+			expectedResponse: &HandlerResponse{
+				Status: http.StatusBadRequest,
+				Body: &models.ProblemDetails{
+					Status: http.StatusBadRequest,
+					Title:  "Malformed request syntax",
+					Detail: "Missing trafficRoutes",
+				},
+			},
+		},
+		{
+			description: "TC6: Illegal null route element",
+			afID:        "af1",
+			tiSub:       &tiSub7ForAf1,
+			expectedResponse: &HandlerResponse{
+				Status: http.StatusBadRequest,
+				Body: &models.ProblemDetails{
+					Status: http.StatusBadRequest,
+					Title:  "Malformed request syntax",
+					Detail: "Illegal null route element at index 0",
 				},
 			},
 		},
@@ -612,6 +669,34 @@ func TestPutIndividualTrafficInfluenceSubscription(t *testing.T) {
 					Status: http.StatusBadRequest,
 					Title:  "Malformed request syntax",
 					Detail: "Missing one of Gpsi, Ipv4Addr, Ipv6Addr, ExternalGroupId, AnyUeInd",
+				},
+			},
+		},
+		{
+			description: "TC6: Missing trafficRoutes",
+			afID:        "af1",
+			subID:       "6",
+			tiSub:       &tiSub6ForAf1,
+			expectedResponse: &HandlerResponse{
+				Status: http.StatusBadRequest,
+				Body: &models.ProblemDetails{
+					Status: http.StatusBadRequest,
+					Title:  "Malformed request syntax",
+					Detail: "Missing trafficRoutes",
+				},
+			},
+		},
+		{
+			description: "TC7: Illegal null route element",
+			afID:        "af1",
+			subID:       "7",
+			tiSub:       &tiSub7ForAf1,
+			expectedResponse: &HandlerResponse{
+				Status: http.StatusBadRequest,
+				Body: &models.ProblemDetails{
+					Status: http.StatusBadRequest,
+					Title:  "Malformed request syntax",
+					Detail: "Illegal null route element at index 0",
 				},
 			},
 		},
