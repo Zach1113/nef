@@ -67,8 +67,6 @@ func (p *Processor) PostPFDManagementTransactions(
 ) {
 	logger.PFDManageLog.Infof("PostPFDManagementTransactions - scsAsID[%s]", scsAsID)
 
-	// TODO: Authorize the AF
-
 	nefCtx := p.Context()
 	if pd := validatePfdManagement(scsAsID, "-1", pfdMng, nefCtx); pd != nil {
 		if pd.Status == http.StatusInternalServerError {
@@ -233,8 +231,6 @@ func (p *Processor) PutIndividualPFDManagementTransaction(
 ) {
 	logger.PFDManageLog.Infof("PutIndividualPFDManagementTransaction - scsAsID[%s], transID[%s]",
 		scsAsID, transID)
-
-	// TODO: Authorize the AF
 
 	nefCtx := p.Context()
 	if pd := validatePfdManagement(scsAsID, transID, pfdMng, nefCtx); pd != nil {
@@ -502,8 +498,6 @@ func (p *Processor) PutIndividualApplicationPFDManagement(
 	logger.PFDManageLog.Infof("PutIndividualApplicationPFDManagement - scsAsID[%s], transID[%s], appID[%s]",
 		scsAsID, transID, appID)
 
-	// TODO: Authorize the AF
-
 	nefCtx := p.Context()
 	af := nefCtx.GetAf(scsAsID)
 	if af == nil {
@@ -567,8 +561,6 @@ func (p *Processor) PatchIndividualApplicationPFDManagement(
 ) {
 	logger.PFDManageLog.Infof("PatchIndividualApplicationPFDManagement - scsAsID[%s], transID[%s], appID[%s]",
 		scsAsID, transID, appID)
-
-	// TODO: Authorize the AF
 
 	nefCtx := p.Context()
 	af := nefCtx.GetAf(scsAsID)

@@ -15,6 +15,13 @@ type nef interface {
 	Config() *factory.Config
 }
 
+// NFContext is the interface used by middleware to perform inbound OAuth2 token checks.
+type NFContext interface {
+	AuthorizationCheck(token string, serviceName models.ServiceName) error
+}
+
+var _ NFContext = &NefContext{}
+
 type NefContext struct {
 	nef
 
@@ -158,4 +165,18 @@ func (c *NefContext) GetTokenCtx(serviceName models.ServiceName, targetNF models
 	}
 	return oauth.GetTokenCtx(models.NrfNfManagementNfType_NEF, targetNF,
 		c.nfInstID, c.Config().NrfUri(), string(serviceName))
+}
+
+// AuthorizationCheck validates the inbound OAuth2 bearer token against serviceName.
+// When OAuth2 is disabled it returns nil immediately (pass-through for dev/test).
+func (c *NefContext) AuthorizationCheck(token string, serviceName models.ServiceName) error {
+	if !c.OAuth2Required {
+		logger.CtxLog.Debugf("NefContext::AuthorizationCheck: OAuth2 not required")
+		return nil
+	}
+	logger.CtxLog.Debugf(
+		"NefContext::AuthorizationCheck: tokenPresent[%t] tokenLen[%d] serviceName[%s]",
+		token != "", len(token), serviceName,
+	)
+	return oauth.VerifyOAuth(token, string(serviceName), c.Config().NrfCertPem())
 }
