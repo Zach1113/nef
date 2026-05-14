@@ -36,7 +36,7 @@ func (p *Processor) SmfNotification(
 	if sub.TiSub != nil {
 		notifDestination = sub.TiSub.NotificationDestination
 	}
-	defer af.Mu.RUnlock()
+	af.Mu.RUnlock()
 
 	if notifDestination == "" {
 		pd := openapi.ProblemDetailsSystemFailure("AF notification destination is empty")
