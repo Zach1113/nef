@@ -15,9 +15,10 @@ import (
 
 var (
 	tiSub1ForAf1 = models.NefTrafficInfluSub{
-		AfServiceId: "Service1",
-		AfAppId:     "App1",
-		Dnn:         "internet",
+		AfServiceId:             "Service1",
+		AfAppId:                 "App1",
+		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app1",
+		Dnn:                     "internet",
 		Snssai: &models.Snssai{
 			Sst: 1,
 			Sd:  "010203",
@@ -43,9 +44,10 @@ var (
 	}
 
 	tiSub2ForAf1 = models.NefTrafficInfluSub{
-		AfServiceId: "Service2",
-		AfAppId:     "App2",
-		Dnn:         "internet",
+		AfServiceId:             "Service2",
+		AfAppId:                 "App2",
+		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app2",
+		Dnn:                     "internet",
 		Snssai: &models.Snssai{
 			Sst: 1,
 			Sd:  "010203",
@@ -71,9 +73,10 @@ var (
 	}
 
 	tiSub3ForAf1 = models.NefTrafficInfluSub{
-		AfServiceId: "Service3",
-		AfAppId:     "App3",
-		Dnn:         "internet",
+		AfServiceId:             "Service3",
+		AfAppId:                 "App3",
+		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app3",
+		Dnn:                     "internet",
 		Snssai: &models.Snssai{
 			Sst: 1,
 			Sd:  "010203",
@@ -99,8 +102,9 @@ var (
 	}
 
 	tiSub4ForAf1 = models.NefTrafficInfluSub{
-		AfServiceId: "Service4",
-		Dnn:         "internet",
+		AfServiceId:             "Service4",
+		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app4",
+		Dnn:                     "internet",
 		Snssai: &models.Snssai{
 			Sst: 1,
 			Sd:  "010203",
@@ -109,8 +113,9 @@ var (
 	}
 
 	tiSub5ForAf1 = models.NefTrafficInfluSub{
-		AfServiceId: "Service5",
-		AfAppId:     "App5",
+		AfServiceId:             "Service5",
+		AfAppId:                 "App5",
+		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app5",
 		TrafficFilters: []models.FlowInfo{
 			{
 				FlowId: 1,
@@ -131,23 +136,31 @@ var (
 	}
 
 	tiSub6ForAf1 = models.NefTrafficInfluSub{
-		AfServiceId: "Service6",
-		AfAppId:     "App6",
-		Ipv4Addr:    "10.60.0.11",
+		AfServiceId:             "Service6",
+		AfAppId:                 "App6",
+		AnyUeInd:                true,
+		Dnn:                     "internet",
+		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app6",
+		Snssai: &models.Snssai{
+			Sst: 1,
+			Sd:  "010203",
+		},
+		Ipv4Addr: "10.60.0.11",
 		TrafficFilters: []models.FlowInfo{
 			{
 				FlowId: 1,
 				FlowDescriptions: []string{
+					"permit out ip from 192.168.0.26 to 10.60.0.0/16",
 					"permit out ip from 192.168.0.24 to 10.60.0.11",
 				},
 			},
 		},
 	}
-
 	tiSub7ForAf1 = models.NefTrafficInfluSub{
-		AfServiceId: "Service7",
-		AfAppId:     "App7",
-		Ipv4Addr:    "10.60.0.12",
+		AfServiceId:             "Service7",
+		AfAppId:                 "App7",
+		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app7",
+		Ipv4Addr:                "10.60.0.12",
 		TrafficFilters: []models.FlowInfo{
 			{
 				FlowId: 1,
@@ -158,6 +171,29 @@ var (
 		},
 		TrafficRoutes: []*models.RouteToLocation{
 			nil,
+		},
+	}
+	tiSub8ForAf1 = models.NefTrafficInfluSub{
+		AfServiceId: "Service8",
+		AfAppId:     "App8",
+		Dnn:         "internet",
+		Snssai: &models.Snssai{
+			Sst: 1,
+			Sd:  "010203",
+		},
+		AnyUeInd: true,
+		TrafficFilters: []models.FlowInfo{
+			{
+				FlowId: 1,
+				FlowDescriptions: []string{
+					"permit out ip from 192.168.0.21 to 10.60.0.0/16",
+				},
+			},
+		},
+		TrafficRoutes: []*models.RouteToLocation{
+			{
+				Dnai: "mec",
+			},
 		},
 	}
 
@@ -353,7 +389,20 @@ func TestPostTrafficInfluenceSubscription(t *testing.T) {
 			},
 		},
 		{
-			description: "TC3: Missing one of afAppId, trafficFilters or ethTrafficFilters",
+			description: "TC3: Missing notificationDestination",
+			afID:        "af1",
+			tiSub:       &tiSub8ForAf1,
+			expectedResponse: &HandlerResponse{
+				Status: http.StatusBadRequest,
+				Body: &models.ProblemDetails{
+					Status: http.StatusBadRequest,
+					Title:  "Malformed request syntax",
+					Detail: "Missing notificationDestination",
+				},
+			},
+		},
+		{
+			description: "TC4: Missing one of afAppId, trafficFilters or ethTrafficFilters",
 			afID:        "af1",
 			tiSub:       &tiSub4ForAf1,
 			expectedResponse: &HandlerResponse{
@@ -366,7 +415,7 @@ func TestPostTrafficInfluenceSubscription(t *testing.T) {
 			},
 		},
 		{
-			description: "TC4: Missing one of Gpsi, Ipv4Addr, Ipv6Addr, ExternalGroupId, AnyUeInd",
+			description: "TC5: Missing one of Gpsi, Ipv4Addr, Ipv6Addr, ExternalGroupId, AnyUeInd",
 			afID:        "af1",
 			tiSub:       &tiSub5ForAf1,
 			expectedResponse: &HandlerResponse{
@@ -645,7 +694,21 @@ func TestPutIndividualTrafficInfluenceSubscription(t *testing.T) {
 			},
 		},
 		{
-			description: "TC4: Missing one of afAppId, trafficFilters or ethTrafficFilters",
+			description: "TC4: Missing notificationDestination",
+			afID:        "af1",
+			subID:       "1",
+			tiSub:       &tiSub8ForAf1,
+			expectedResponse: &HandlerResponse{
+				Status: http.StatusBadRequest,
+				Body: &models.ProblemDetails{
+					Status: http.StatusBadRequest,
+					Title:  "Malformed request syntax",
+					Detail: "Missing notificationDestination",
+				},
+			},
+		},
+		{
+			description: "TC5: Missing one of afAppId, trafficFilters or ethTrafficFilters",
 			afID:        "af1",
 			subID:       "4",
 			tiSub:       &tiSub4ForAf1,
@@ -659,7 +722,7 @@ func TestPutIndividualTrafficInfluenceSubscription(t *testing.T) {
 			},
 		},
 		{
-			description: "TC5: Missing one of Gpsi, Ipv4Addr, Ipv6Addr, ExternalGroupId, AnyUeInd",
+			description: "TC6: Missing one of Gpsi, Ipv4Addr, Ipv6Addr, ExternalGroupId, AnyUeInd",
 			afID:        "af1",
 			subID:       "5",
 			tiSub:       &tiSub5ForAf1,

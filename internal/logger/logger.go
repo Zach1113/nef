@@ -17,6 +17,7 @@ var (
 	SBILog       *logrus.Entry
 	ConsumerLog  *logrus.Entry
 	ProcessorLog *logrus.Entry
+	UtilLog      *logrus.Entry
 	TrafInfluLog *logrus.Entry
 	PFDManageLog *logrus.Entry
 	PFDFLog      *logrus.Entry
@@ -48,6 +49,7 @@ func init() {
 	SBILog = NfLog.WithField(logger_util.FieldCategory, "SBI")
 	ConsumerLog = NfLog.WithField(logger_util.FieldCategory, "Consumer")
 	ProcessorLog = NfLog.WithField(logger_util.FieldCategory, "Proc")
+	UtilLog = NfLog.WithField(logger_util.FieldCategory, "Util")
 	TrafInfluLog = NfLog.WithField(logger_util.FieldCategory, "TraffInfl")
 	PFDManageLog = NfLog.WithField(logger_util.FieldCategory, "PFDMng")
 	PFDFLog = NfLog.WithField(logger_util.FieldCategory, "PFDF")

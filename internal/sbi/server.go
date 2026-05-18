@@ -11,8 +11,10 @@ import (
 
 	"github.com/free5gc/nef/internal/logger"
 	"github.com/free5gc/nef/internal/sbi/processor"
+	nef_util "github.com/free5gc/nef/internal/util"
 	"github.com/free5gc/nef/pkg/app"
 	"github.com/free5gc/nef/pkg/factory"
+	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/util/httpwrapper"
 	logger_util "github.com/free5gc/util/logger"
 	"github.com/free5gc/util/metrics"
@@ -45,25 +47,55 @@ func NewServer(nef nef, tlsKeyLogPath string) (*Server, error) {
 
 	s.router.Use(metrics.InboundMetrics())
 
-	endpoints := s.getTrafficInfluenceRoutes()
-	group := s.router.Group(factory.TraffInfluResUriPrefix)
-	applyRoutes(group, endpoints)
+	// Callback endpoint: protected by OAuth2 middleware (callers must present
+	// a valid nnef-callback Bearer token issued by NRF).
+	callbackAuthCheck := nef_util.NewRouterAuthorizationCheck(models.ServiceName("nnef-callback"))
+	callbackGroup := s.router.Group(factory.NefCallbackResUriPrefix)
+	callbackGroup.Use(func(c *gin.Context) {
+		callbackAuthCheck.Check(c, s.Context())
+	})
+	applyRoutes(callbackGroup, s.getCallbackRoutes())
 
-	endpoints = s.getPFDManagementRoutes()
-	group = s.router.Group(factory.PfdMngResUriPrefix)
-	applyRoutes(group, endpoints)
+	// All other route groups are mounted only when their service is declared in
+	// ServiceList, and each group is protected by OAuth2 middleware.
+	for _, service := range s.Config().ServiceList() {
+		switch service.ServiceName {
+		case factory.ServiceNefPfd:
+			// nnef-pfdmanagement covers both the external AF-facing API
+			// (/3gpp-pfd-management) and the SBI PFDF API (/nnef-pfdmanagement).
+			authCheck := nef_util.NewRouterAuthorizationCheck(models.ServiceName_NNEF_PFDMANAGEMENT)
 
-	endpoints = s.getPFDFRoutes()
-	group = s.router.Group(factory.NefPfdMngResUriPrefix)
-	applyRoutes(group, endpoints)
+			pfdMngGroup := s.router.Group(factory.PfdMngResUriPrefix)
+			pfdMngGroup.Use(func(c *gin.Context) {
+				authCheck.Check(c, s.Context())
+			})
+			applyRoutes(pfdMngGroup, s.getPFDManagementRoutes())
 
-	endpoints = s.getOamRoutes()
-	group = s.router.Group(factory.NefOamResUriPrefix)
-	applyRoutes(group, endpoints)
+			pfdFGroup := s.router.Group(factory.NefPfdMngResUriPrefix)
+			pfdFGroup.Use(func(c *gin.Context) {
+				authCheck.Check(c, s.Context())
+			})
+			applyRoutes(pfdFGroup, s.getPFDFRoutes())
 
-	endpoints = s.getCallbackRoutes()
-	group = s.router.Group(factory.NefCallbackResUriPrefix)
-	applyRoutes(group, endpoints)
+		case factory.ServiceNefOam:
+			authCheck := nef_util.NewRouterAuthorizationCheck(models.ServiceName(factory.ServiceNefOam))
+
+			oamGroup := s.router.Group(factory.NefOamResUriPrefix)
+			oamGroup.Use(func(c *gin.Context) {
+				authCheck.Check(c, s.Context())
+			})
+			applyRoutes(oamGroup, s.getOamRoutes())
+
+		case factory.ServiceTraffInflu:
+			// 3gpp-traffic-influence is an AF-facing API (3GPP TS 29.522);
+			authCheck := nef_util.NewRouterAuthorizationCheck(models.ServiceName_3GPP_TRAFFIC_INFLUENCE)
+			tiGroup := s.router.Group(factory.TraffInfluResUriPrefix)
+			tiGroup.Use(func(c *gin.Context) {
+				authCheck.Check(c, s.Context())
+			})
+			applyRoutes(tiGroup, s.getTrafficInfluenceRoutes())
+		}
+	}
 
 	s.router.Use(cors.New(cors.Config{
 		AllowMethods: []string{"GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"},
