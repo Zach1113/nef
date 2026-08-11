@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/free5gc/openapi"
 	"github.com/free5gc/openapi/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	tiSub1ForAf1 = models.NefTrafficInfluSub{
+	tiSub1ForAf1 = models.Nef_TrafInfl_TrafficInfluSub{
 		AfServiceId:             "Service1",
 		AfAppId:                 "App1",
 		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app1",
@@ -24,7 +25,7 @@ var (
 			Sd:  "010203",
 		},
 		AnyUeInd: true,
-		TrafficFilters: []models.FlowInfo{
+		TrafficFilters: []models.Nef_FlowInfo{
 			{
 				FlowId: 1,
 				FlowDescriptions: []string{
@@ -32,7 +33,7 @@ var (
 				},
 			},
 		},
-		TrafficRoutes: []*models.RouteToLocation{
+		TrafficRoutes: []models.RouteToLocation{
 			{
 				Dnai: "mec",
 				RouteInfo: &models.RouteInformation{
@@ -43,7 +44,7 @@ var (
 		},
 	}
 
-	tiSub2ForAf1 = models.NefTrafficInfluSub{
+	tiSub2ForAf1 = models.Nef_TrafInfl_TrafficInfluSub{
 		AfServiceId:             "Service2",
 		AfAppId:                 "App2",
 		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app2",
@@ -53,7 +54,7 @@ var (
 			Sd:  "010203",
 		},
 		AnyUeInd: true,
-		TrafficFilters: []models.FlowInfo{
+		TrafficFilters: []models.Nef_FlowInfo{
 			{
 				FlowId: 1,
 				FlowDescriptions: []string{
@@ -61,7 +62,7 @@ var (
 				},
 			},
 		},
-		TrafficRoutes: []*models.RouteToLocation{
+		TrafficRoutes: []models.RouteToLocation{
 			{
 				Dnai: "mec",
 				RouteInfo: &models.RouteInformation{
@@ -72,7 +73,7 @@ var (
 		},
 	}
 
-	tiSub3ForAf1 = models.NefTrafficInfluSub{
+	tiSub3ForAf1 = models.Nef_TrafInfl_TrafficInfluSub{
 		AfServiceId:             "Service3",
 		AfAppId:                 "App3",
 		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app3",
@@ -82,7 +83,7 @@ var (
 			Sd:  "010203",
 		},
 		Ipv4Addr: "10.60.0.10",
-		TrafficFilters: []models.FlowInfo{
+		TrafficFilters: []models.Nef_FlowInfo{
 			{
 				FlowId: 1,
 				FlowDescriptions: []string{
@@ -90,7 +91,7 @@ var (
 				},
 			},
 		},
-		TrafficRoutes: []*models.RouteToLocation{
+		TrafficRoutes: []models.RouteToLocation{
 			{
 				Dnai: "mec",
 				RouteInfo: &models.RouteInformation{
@@ -101,7 +102,7 @@ var (
 		},
 	}
 
-	tiSub4ForAf1 = models.NefTrafficInfluSub{
+	tiSub4ForAf1 = models.Nef_TrafInfl_TrafficInfluSub{
 		AfServiceId:             "Service4",
 		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app4",
 		Dnn:                     "internet",
@@ -112,11 +113,11 @@ var (
 		Ipv4Addr: "10.60.0.10",
 	}
 
-	tiSub5ForAf1 = models.NefTrafficInfluSub{
+	tiSub5ForAf1 = models.Nef_TrafInfl_TrafficInfluSub{
 		AfServiceId:             "Service5",
 		AfAppId:                 "App5",
 		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app5",
-		TrafficFilters: []models.FlowInfo{
+		TrafficFilters: []models.Nef_FlowInfo{
 			{
 				FlowId: 1,
 				FlowDescriptions: []string{
@@ -124,7 +125,7 @@ var (
 				},
 			},
 		},
-		TrafficRoutes: []*models.RouteToLocation{
+		TrafficRoutes: []models.RouteToLocation{
 			{
 				Dnai: "mec",
 				RouteInfo: &models.RouteInformation{
@@ -135,7 +136,7 @@ var (
 		},
 	}
 
-	tiSub6ForAf1 = models.NefTrafficInfluSub{
+	tiSub6ForAf1 = models.Nef_TrafInfl_TrafficInfluSub{
 		AfServiceId:             "Service6",
 		AfAppId:                 "App6",
 		AnyUeInd:                true,
@@ -146,7 +147,7 @@ var (
 			Sd:  "010203",
 		},
 		Ipv4Addr: "10.60.0.11",
-		TrafficFilters: []models.FlowInfo{
+		TrafficFilters: []models.Nef_FlowInfo{
 			{
 				FlowId: 1,
 				FlowDescriptions: []string{
@@ -156,24 +157,7 @@ var (
 			},
 		},
 	}
-	tiSub7ForAf1 = models.NefTrafficInfluSub{
-		AfServiceId:             "Service7",
-		AfAppId:                 "App7",
-		NotificationDestination: "http://127.0.0.100:8000/nnef-callback/v1/traffic-influence/app7",
-		Ipv4Addr:                "10.60.0.12",
-		TrafficFilters: []models.FlowInfo{
-			{
-				FlowId: 1,
-				FlowDescriptions: []string{
-					"permit out ip from 192.168.0.26 to 10.60.0.12",
-				},
-			},
-		},
-		TrafficRoutes: []*models.RouteToLocation{
-			nil,
-		},
-	}
-	tiSub8ForAf1 = models.NefTrafficInfluSub{
+	tiSub8ForAf1 = models.Nef_TrafInfl_TrafficInfluSub{
 		AfServiceId: "Service8",
 		AfAppId:     "App8",
 		Dnn:         "internet",
@@ -182,7 +166,7 @@ var (
 			Sd:  "010203",
 		},
 		AnyUeInd: true,
-		TrafficFilters: []models.FlowInfo{
+		TrafficFilters: []models.Nef_FlowInfo{
 			{
 				FlowId: 1,
 				FlowDescriptions: []string{
@@ -190,15 +174,15 @@ var (
 				},
 			},
 		},
-		TrafficRoutes: []*models.RouteToLocation{
+		TrafficRoutes: []models.RouteToLocation{
 			{
 				Dnai: "mec",
 			},
 		},
 	}
 
-	tiSubPatch1ForAf1 = models.NefTrafficInfluSubPatch{
-		TrafficFilters: []models.FlowInfo{
+	tiSubPatch1ForAf1 = models.Nef_TrafInfl_TrafficInfluSubPatch{
+		TrafficFilters: []models.Nef_FlowInfo{
 			{
 				FlowId: 1,
 				FlowDescriptions: []string{
@@ -206,7 +190,7 @@ var (
 				},
 			},
 		},
-		TrafficRoutes: []*models.RouteToLocation{
+		TrafficRoutes: []models.RouteToLocation{
 			{
 				Dnai: "mec5",
 			},
@@ -215,6 +199,7 @@ var (
 )
 
 func TestGetTrafficInfluenceSubscription(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	testCases := []struct {
 		description      string
 		afID             string
@@ -225,7 +210,7 @@ func TestGetTrafficInfluenceSubscription(t *testing.T) {
 			afID:        "af1",
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusOK,
-				Body:   &[]models.NefTrafficInfluSub{tiSub1ForAf1, tiSub2ForAf1},
+				Body:   &[]models.Nef_TrafInfl_TrafficInfluSub{tiSub1ForAf1, tiSub2ForAf1},
 			},
 		},
 		{
@@ -263,8 +248,8 @@ func TestGetTrafficInfluenceSubscription(t *testing.T) {
 			nefApp.Processor().GetTrafficInfluenceSubscription(c, tc.afID)
 			require.Equal(t, tc.expectedResponse.Status, httpRecorder.Code)
 
-			if trafficInfluSub, ok := tc.expectedResponse.Body.(*[]models.NefTrafficInfluSub); ok {
-				var rspSubs []models.NefTrafficInfluSub
+			if trafficInfluSub, ok := tc.expectedResponse.Body.(*[]models.Nef_TrafInfl_TrafficInfluSub); ok {
+				var rspSubs []models.Nef_TrafInfl_TrafficInfluSub
 				require.NoError(t, json.Unmarshal(httpRecorder.Body.Bytes(), &rspSubs))
 				require.ElementsMatch(t, *trafficInfluSub, rspSubs)
 			} else {
@@ -278,6 +263,7 @@ func TestGetTrafficInfluenceSubscription(t *testing.T) {
 }
 
 func TestGetGetIndividualTrafficInfluenceSubscription(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	testCases := []struct {
 		description      string
 		afID             string
@@ -347,6 +333,7 @@ func TestGetGetIndividualTrafficInfluenceSubscription(t *testing.T) {
 }
 
 func TestPostTrafficInfluenceSubscription(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initNRFDiscPCFStub()
 	initUDRDrPutTiDataStub(http.StatusNoContent)
 	initPCFPaPostAppSessionsStub(http.StatusCreated)
@@ -361,7 +348,7 @@ func TestPostTrafficInfluenceSubscription(t *testing.T) {
 	testCases := []struct {
 		description      string
 		afID             string
-		tiSub            *models.NefTrafficInfluSub
+		tiSub            *models.Nef_TrafInfl_TrafficInfluSub
 		expectedResponse *HandlerResponse
 	}{
 		{
@@ -440,19 +427,6 @@ func TestPostTrafficInfluenceSubscription(t *testing.T) {
 				},
 			},
 		},
-		{
-			description: "TC6: Illegal null route element",
-			afID:        "af1",
-			tiSub:       &tiSub7ForAf1,
-			expectedResponse: &HandlerResponse{
-				Status: http.StatusBadRequest,
-				Body: &models.ProblemDetails{
-					Status: http.StatusBadRequest,
-					Title:  "Malformed request syntax",
-					Detail: "Illegal null route element at index 0",
-				},
-			},
-		},
 	}
 
 	nefCtx := nefApp.Context()
@@ -485,6 +459,7 @@ func TestPostTrafficInfluenceSubscription(t *testing.T) {
 }
 
 func TestDeleteIndividualTrafficInfluenceSubscription(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initNRFDiscPCFStub()
 	initUDRDrDeleteTiDataStub(http.StatusNoContent)
 	initPCFPaDeleteAppSessionsStub(http.StatusNoContent)
@@ -559,6 +534,7 @@ func TestDeleteIndividualTrafficInfluenceSubscription(t *testing.T) {
 }
 
 func TestPatchIndividualTrafficInfluenceSubscription(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initNRFDiscPCFStub()
 	initUDRDrPatchTiDataStub(http.StatusNoContent)
 	initPCFPaPatchAppSessionsStub(http.StatusNoContent)
@@ -576,7 +552,7 @@ func TestPatchIndividualTrafficInfluenceSubscription(t *testing.T) {
 		description      string
 		afID             string
 		subID            string
-		tiSubPatch       *models.NefTrafficInfluSubPatch
+		tiSubPatch       *models.Nef_TrafInfl_TrafficInfluSubPatch
 		expectedResponse *HandlerResponse
 	}{
 		{
@@ -647,6 +623,7 @@ func TestPatchIndividualTrafficInfluenceSubscription(t *testing.T) {
 }
 
 func TestPutIndividualTrafficInfluenceSubscription(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initNRFDiscPCFStub()
 	initUDRDrPutTiDataStub(http.StatusNoContent)
 	initPCFPaPostAppSessionsStub(http.StatusCreated)
@@ -656,7 +633,7 @@ func TestPutIndividualTrafficInfluenceSubscription(t *testing.T) {
 		description      string
 		afID             string
 		subID            string
-		tiSub            *models.NefTrafficInfluSub
+		tiSub            *models.Nef_TrafInfl_TrafficInfluSub
 		expectedResponse *HandlerResponse
 	}{
 		{
@@ -749,20 +726,6 @@ func TestPutIndividualTrafficInfluenceSubscription(t *testing.T) {
 				},
 			},
 		},
-		{
-			description: "TC7: Illegal null route element",
-			afID:        "af1",
-			subID:       "7",
-			tiSub:       &tiSub7ForAf1,
-			expectedResponse: &HandlerResponse{
-				Status: http.StatusBadRequest,
-				Body: &models.ProblemDetails{
-					Status: http.StatusBadRequest,
-					Title:  "Malformed request syntax",
-					Detail: "Illegal null route element at index 0",
-				},
-			},
-		},
 	}
 
 	nefCtx := nefApp.Context()
@@ -818,10 +781,10 @@ func initUDRDrDeleteTiDataStub(statusCode int) {
 }
 
 func initPCFPaPostAppSessionsStub(statusCode int) {
-	asc3ForAf1 := &models.AppSessionContext{
-		AscReqData: &models.AppSessionContextReqData{
+	asc3ForAf1 := &models.Pcf_PolAuth_AppSessionContext{
+		AscReqData: &models.Pcf_PolAuth_AppSessionContextReqData{
 			AfAppId: tiSub3ForAf1.AfAppId,
-			AfRoutReq: &models.AfRoutingRequirement{
+			AfRoutReq: &models.Pcf_PolAuth_AfRoutingRequirement{
 				AppReloc:    tiSub3ForAf1.AppReloInd,
 				RouteToLocs: tiSub3ForAf1.TrafficRoutes,
 				TempVals:    tiSub3ForAf1.TempValidities,

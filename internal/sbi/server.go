@@ -49,7 +49,7 @@ func NewServer(nef nef, tlsKeyLogPath string) (*Server, error) {
 
 	// Callback endpoint: protected by OAuth2 middleware (callers must present
 	// a valid nnef-callback Bearer token issued by NRF).
-	callbackAuthCheck := nef_util.NewRouterAuthorizationCheck(models.ServiceName("nnef-callback"))
+	callbackAuthCheck := nef_util.NewRouterAuthorizationCheck(models.Nrf_NFMgmt_ServiceName("nnef-callback"))
 	callbackGroup := s.router.Group(factory.NefCallbackResUriPrefix)
 	callbackGroup.Use(func(c *gin.Context) {
 		callbackAuthCheck.Check(c, s.Context())
@@ -63,7 +63,7 @@ func NewServer(nef nef, tlsKeyLogPath string) (*Server, error) {
 		case factory.ServiceNefPfd:
 			// nnef-pfdmanagement covers both the external AF-facing API
 			// (/3gpp-pfd-management) and the SBI PFDF API (/nnef-pfdmanagement).
-			authCheck := nef_util.NewRouterAuthorizationCheck(models.ServiceName_NNEF_PFDMANAGEMENT)
+			authCheck := nef_util.NewRouterAuthorizationCheck(models.Nrf_NFMgmt_ServiceName_NNEF_PFDMANAGEMENT)
 
 			pfdMngGroup := s.router.Group(factory.PfdMngResUriPrefix)
 			pfdMngGroup.Use(func(c *gin.Context) {
@@ -78,7 +78,7 @@ func NewServer(nef nef, tlsKeyLogPath string) (*Server, error) {
 			applyRoutes(pfdFGroup, s.getPFDFRoutes())
 
 		case factory.ServiceNefOam:
-			authCheck := nef_util.NewRouterAuthorizationCheck(models.ServiceName(factory.ServiceNefOam))
+			authCheck := nef_util.NewRouterAuthorizationCheck(models.Nrf_NFMgmt_ServiceName(factory.ServiceNefOam))
 
 			oamGroup := s.router.Group(factory.NefOamResUriPrefix)
 			oamGroup.Use(func(c *gin.Context) {
@@ -88,7 +88,7 @@ func NewServer(nef nef, tlsKeyLogPath string) (*Server, error) {
 
 		case factory.ServiceTraffInflu:
 			// 3gpp-traffic-influence is an AF-facing API (3GPP TS 29.522);
-			authCheck := nef_util.NewRouterAuthorizationCheck(models.ServiceName_3GPP_TRAFFIC_INFLUENCE)
+			authCheck := nef_util.NewRouterAuthorizationCheck(models.Nrf_NFMgmt_ServiceName_3GPP_TRAFFIC_INFLUENCE)
 			tiGroup := s.router.Group(factory.TraffInfluResUriPrefix)
 			tiGroup.Use(func(c *gin.Context) {
 				authCheck.Check(c, s.Context())

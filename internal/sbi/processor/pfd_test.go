@@ -70,29 +70,29 @@ func (a *nefTestApp) Processor() *Processor {
 var (
 	nefApp *nefTestApp
 
-	pfd1 = models.Pfd{
+	pfd1 = models.Nef_T8PFDMgmt_Pfd{
 		PfdId: "pfd1",
 		FlowDescriptions: []string{
 			"permit in ip from 10.68.28.39 80 to any",
 			"permit out ip from any to 10.68.28.39 80",
 		},
 	}
-	pfd2 = models.Pfd{
+	pfd2 = models.Nef_T8PFDMgmt_Pfd{
 		PfdId: "pfd2",
 		Urls: []string{
 			"^http://test.example.com(/\\S*)?$",
 		},
 	}
-	pfd3 = models.Pfd{
+	pfd3 = models.Nef_T8PFDMgmt_Pfd{
 		PfdId: "pfd3",
 		Urls: []string{
 			"^http://test.example2.net(/\\S*)?$",
 		},
 	}
 
-	pfdDataForApp1 = models.PfdDataForApp{
+	pfdDataForApp1 = models.Nef_PFDMgmt_PfdDataForApp{
 		ApplicationId: "app1",
-		Pfds: []models.PfdContent{
+		Pfds: []models.Nef_PFDMgmt_PfdContent{
 			{
 				PfdId: "pfd1",
 				FlowDescriptions: []string{
@@ -108,9 +108,9 @@ var (
 			},
 		},
 	}
-	pfdDataForApp2 = models.PfdDataForApp{
+	pfdDataForApp2 = models.Nef_PFDMgmt_PfdDataForApp{
 		ApplicationId: "app2",
-		Pfds: []models.PfdContent{
+		Pfds: []models.Nef_PFDMgmt_PfdContent{
 			{
 				PfdId: "pfd3",
 				Urls: []string{
@@ -123,7 +123,6 @@ var (
 
 func TestMain(m *testing.M) {
 	var err error
-	openapi.InterceptH2CClient()
 	initNRFNfmStub()
 	initNRFDiscUDRStub()
 
@@ -152,11 +151,11 @@ func TestMain(m *testing.M) {
 	}
 
 	exitVal := m.Run()
-	openapi.RestoreH2CClient()
 	os.Exit(exitVal)
 }
 
 func TestGetPFDManagementTransactions(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrGetPfdDatasStub()
 	defer gock.Off()
 
@@ -170,14 +169,14 @@ func TestGetPFDManagementTransactions(t *testing.T) {
 			afID:        "af1",
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusOK,
-				Body: &[]models.PfdManagement{
+				Body: &[]models.Nef_T8PFDMgmt_PfdManagement{
 					{
 						Self: nefApp.Processor().genPfdManagementURI("af1", "1"),
-						PfdDatas: map[string]models.PfdData{
+						PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 							"app1": {
 								ExternalAppId: "app1",
 								Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app1"),
-								Pfds: map[string]models.Pfd{
+								Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 									"pfd1": pfd1,
 									"pfd2": pfd2,
 								},
@@ -185,7 +184,7 @@ func TestGetPFDManagementTransactions(t *testing.T) {
 							"app2": {
 								ExternalAppId: "app2",
 								Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app2"),
-								Pfds: map[string]models.Pfd{
+								Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 									"pfd3": pfd3,
 								},
 							},
@@ -229,6 +228,7 @@ func TestGetPFDManagementTransactions(t *testing.T) {
 }
 
 func TestGetPFDManagementTransactionsWithMalformedMultipartFromUDR(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrGetPfdDatasMultipartStub()
 	defer gock.Off()
 
@@ -253,6 +253,7 @@ func TestGetPFDManagementTransactionsWithMalformedMultipartFromUDR(t *testing.T)
 }
 
 func TestDeletePFDManagementTransactions(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrDeletePfdDataStub()
 	defer gock.Off()
 
@@ -302,30 +303,31 @@ func TestDeletePFDManagementTransactions(t *testing.T) {
 }
 
 func TestPostPFDManagementTransactions(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrPutPfdDataStub(http.StatusCreated)
 	defer gock.Off()
 
 	testCases := []struct {
 		description      string
 		afID             string
-		pfdManagement    *models.PfdManagement
+		pfdManagement    *models.Nef_T8PFDMgmt_PfdManagement
 		expectedResponse *HandlerResponse
 	}{
 		{
 			description: "TC1: Valid input",
 			afID:        "af1",
-			pfdManagement: &models.PfdManagement{
-				PfdDatas: map[string]models.PfdData{
+			pfdManagement: &models.Nef_T8PFDMgmt_PfdManagement{
+				PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 					"app1": {
 						ExternalAppId: "app1",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd1": pfd1,
 							"pfd2": pfd2,
 						},
 					},
 					"app2": {
 						ExternalAppId: "app2",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd3": pfd3,
 						},
 					},
@@ -333,13 +335,13 @@ func TestPostPFDManagementTransactions(t *testing.T) {
 			},
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusCreated,
-				Body: &models.PfdManagement{
+				Body: &models.Nef_T8PFDMgmt_PfdManagement{
 					Self: nefApp.Processor().genPfdManagementURI("af1", "1"),
-					PfdDatas: map[string]models.PfdData{
+					PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 						"app1": {
 							ExternalAppId: "app1",
 							Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app1"),
-							Pfds: map[string]models.Pfd{
+							Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 								"pfd1": pfd1,
 								"pfd2": pfd2,
 							},
@@ -347,30 +349,30 @@ func TestPostPFDManagementTransactions(t *testing.T) {
 						"app2": {
 							ExternalAppId: "app2",
 							Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app2"),
-							Pfds: map[string]models.Pfd{
+							Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 								"pfd3": pfd3,
 							},
 						},
 					},
-					PfdReports: map[string]models.PfdReport{},
+					PfdReports: map[string]models.Nef_T8PFDMgmt_PfdReport{},
 				},
 			},
 		},
 		{
 			description: "TC2: Invalid AF ID, should return ProblemDetails",
 			afID:        "af2",
-			pfdManagement: &models.PfdManagement{
-				PfdDatas: map[string]models.PfdData{
+			pfdManagement: &models.Nef_T8PFDMgmt_PfdManagement{
+				PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 					"app1": {
 						ExternalAppId: "app1",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd1": pfd1,
 							"pfd2": pfd2,
 						},
 					},
 					"app2": {
 						ExternalAppId: "app2",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd3": pfd3,
 						},
 					},
@@ -384,8 +386,8 @@ func TestPostPFDManagementTransactions(t *testing.T) {
 		{
 			description: "Invalid PfdManagement, should return ProblemDetails",
 			afID:        "af1",
-			pfdManagement: &models.PfdManagement{
-				PfdDatas: map[string]models.PfdData{},
+			pfdManagement: &models.Nef_T8PFDMgmt_PfdManagement{
+				PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{},
 			},
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusNotFound,
@@ -412,6 +414,7 @@ func TestPostPFDManagementTransactions(t *testing.T) {
 }
 
 func TestGetIndividualPFDManagementTransaction(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrGetPfdDatasStub()
 	defer gock.Off()
 
@@ -427,13 +430,13 @@ func TestGetIndividualPFDManagementTransaction(t *testing.T) {
 			transID:     "1",
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusOK,
-				Body: &models.PfdManagement{
+				Body: &models.Nef_T8PFDMgmt_PfdManagement{
 					Self: nefApp.Processor().genPfdManagementURI("af1", "1"),
-					PfdDatas: map[string]models.PfdData{
+					PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 						"app1": {
 							ExternalAppId: "app1",
 							Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app1"),
-							Pfds: map[string]models.Pfd{
+							Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 								"pfd1": pfd1,
 								"pfd2": pfd2,
 							},
@@ -441,7 +444,7 @@ func TestGetIndividualPFDManagementTransaction(t *testing.T) {
 						"app2": {
 							ExternalAppId: "app2",
 							Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app2"),
-							Pfds: map[string]models.Pfd{
+							Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 								"pfd3": pfd3,
 							},
 						},
@@ -485,6 +488,7 @@ func TestGetIndividualPFDManagementTransaction(t *testing.T) {
 }
 
 func TestGetIndividualPFDManagementTransactionWithMalformedMultipartFromUDR(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrGetPfdDatasMultipartStub()
 	defer gock.Off()
 
@@ -509,6 +513,7 @@ func TestGetIndividualPFDManagementTransactionWithMalformedMultipartFromUDR(t *t
 }
 
 func TestDeleteIndividualPFDManagementTransaction(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrDeletePfdDataStub()
 	defer gock.Off()
 
@@ -561,6 +566,7 @@ func TestDeleteIndividualPFDManagementTransaction(t *testing.T) {
 }
 
 func TestPutIndividualPFDManagementTransaction(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrPutPfdDataStub(http.StatusOK)
 	defer gock.Off()
 
@@ -568,25 +574,25 @@ func TestPutIndividualPFDManagementTransaction(t *testing.T) {
 		description      string
 		afID             string
 		transID          string
-		pfdManagement    *models.PfdManagement
+		pfdManagement    *models.Nef_T8PFDMgmt_PfdManagement
 		expectedResponse *HandlerResponse
 	}{
 		{
 			description: "TC1: Valid input",
 			afID:        "af1",
 			transID:     "1",
-			pfdManagement: &models.PfdManagement{
-				PfdDatas: map[string]models.PfdData{
+			pfdManagement: &models.Nef_T8PFDMgmt_PfdManagement{
+				PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 					"app1": {
 						ExternalAppId: "app1",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd1": pfd1,
 							"pfd2": pfd2,
 						},
 					},
 					"app2": {
 						ExternalAppId: "app2",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd3": pfd3,
 						},
 					},
@@ -594,13 +600,13 @@ func TestPutIndividualPFDManagementTransaction(t *testing.T) {
 			},
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusOK,
-				Body: &models.PfdManagement{
+				Body: &models.Nef_T8PFDMgmt_PfdManagement{
 					Self: nefApp.Processor().genPfdManagementURI("af1", "1"),
-					PfdDatas: map[string]models.PfdData{
+					PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 						"app1": {
 							ExternalAppId: "app1",
 							Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app1"),
-							Pfds: map[string]models.Pfd{
+							Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 								"pfd1": pfd1,
 								"pfd2": pfd2,
 							},
@@ -608,12 +614,12 @@ func TestPutIndividualPFDManagementTransaction(t *testing.T) {
 						"app2": {
 							ExternalAppId: "app2",
 							Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app2"),
-							Pfds: map[string]models.Pfd{
+							Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 								"pfd3": pfd3,
 							},
 						},
 					},
-					PfdReports: map[string]models.PfdReport{},
+					PfdReports: map[string]models.Nef_T8PFDMgmt_PfdReport{},
 				},
 			},
 		},
@@ -621,18 +627,18 @@ func TestPutIndividualPFDManagementTransaction(t *testing.T) {
 			description: "TC2: Invalid transaction ID, should return ProblemDetails",
 			afID:        "af1",
 			transID:     "-1",
-			pfdManagement: &models.PfdManagement{
-				PfdDatas: map[string]models.PfdData{
+			pfdManagement: &models.Nef_T8PFDMgmt_PfdManagement{
+				PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 					"app1": {
 						ExternalAppId: "app1",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd1": pfd1,
 							"pfd2": pfd2,
 						},
 					},
 					"app2": {
 						ExternalAppId: "app2",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd3": pfd3,
 						},
 					},
@@ -647,8 +653,8 @@ func TestPutIndividualPFDManagementTransaction(t *testing.T) {
 			description: "TC3: Invalid PfdManagement, should return ProblemDetails",
 			afID:        "af1",
 			transID:     "1",
-			pfdManagement: &models.PfdManagement{
-				PfdDatas: map[string]models.PfdData{},
+			pfdManagement: &models.Nef_T8PFDMgmt_PfdManagement{
+				PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{},
 			},
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusNotFound,
@@ -680,6 +686,7 @@ func TestPutIndividualPFDManagementTransaction(t *testing.T) {
 }
 
 func TestGetIndividualApplicationPFDManagement(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrGetPfdDataStub()
 	defer gock.Off()
 
@@ -697,10 +704,10 @@ func TestGetIndividualApplicationPFDManagement(t *testing.T) {
 			appID:       "app1",
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusOK,
-				Body: &models.PfdData{
+				Body: &models.Nef_T8PFDMgmt_PfdData{
 					ExternalAppId: "app1",
 					Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app1"),
-					Pfds: map[string]models.Pfd{
+					Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 						"pfd1": pfd1,
 						"pfd2": pfd2,
 					},
@@ -743,6 +750,7 @@ func TestGetIndividualApplicationPFDManagement(t *testing.T) {
 }
 
 func TestDeleteIndividualApplicationPFDManagement(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrDeletePfdDataStub()
 	defer gock.Off()
 
@@ -799,6 +807,7 @@ func TestDeleteIndividualApplicationPFDManagement(t *testing.T) {
 }
 
 func TestPutIndividualApplicationPFDManagement(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrPutPfdDataStub(http.StatusOK)
 	defer gock.Off()
 
@@ -807,7 +816,7 @@ func TestPutIndividualApplicationPFDManagement(t *testing.T) {
 		afID             string
 		transID          string
 		appID            string
-		pfdData          *models.PfdData
+		pfdData          *models.Nef_T8PFDMgmt_PfdData
 		expectedResponse *HandlerResponse
 	}{
 		{
@@ -815,19 +824,19 @@ func TestPutIndividualApplicationPFDManagement(t *testing.T) {
 			afID:        "af1",
 			transID:     "1",
 			appID:       "app1",
-			pfdData: &models.PfdData{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": pfd1,
 					"pfd2": pfd2,
 				},
 			},
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusOK,
-				Body: &models.PfdData{
+				Body: &models.Nef_T8PFDMgmt_PfdData{
 					ExternalAppId: "app1",
 					Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app1"),
-					Pfds: map[string]models.Pfd{
+					Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 						"pfd1": pfd1,
 						"pfd2": pfd2,
 					},
@@ -839,9 +848,9 @@ func TestPutIndividualApplicationPFDManagement(t *testing.T) {
 			afID:        "af1",
 			transID:     "1",
 			appID:       "app2",
-			pfdData: &models.PfdData{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app2",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": pfd1,
 					"pfd2": pfd2,
 				},
@@ -856,9 +865,9 @@ func TestPutIndividualApplicationPFDManagement(t *testing.T) {
 			afID:        "af1",
 			transID:     "1",
 			appID:       "app1",
-			pfdData: &models.PfdData{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": {
 						PfdId: "pfd1",
 					},
@@ -895,6 +904,7 @@ func TestPutIndividualApplicationPFDManagement(t *testing.T) {
 }
 
 func TestPatchIndividualApplicationPFDManagement(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrGetPfdDataStub()
 	initUDRDrPutPfdDataStub(http.StatusOK)
 	defer gock.Off()
@@ -904,7 +914,7 @@ func TestPatchIndividualApplicationPFDManagement(t *testing.T) {
 		afID             string
 		transID          string
 		appID            string
-		pfdData          *models.PfdData
+		pfdData          *models.Nef_T8PFDMgmt_PfdData
 		expectedResponse *HandlerResponse
 	}{
 		{
@@ -912,9 +922,9 @@ func TestPatchIndividualApplicationPFDManagement(t *testing.T) {
 			afID:        "af1",
 			transID:     "1",
 			appID:       "app1",
-			pfdData: &models.PfdData{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": {
 						PfdId: "pfd1",
 					},
@@ -922,10 +932,10 @@ func TestPatchIndividualApplicationPFDManagement(t *testing.T) {
 			},
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusOK,
-				Body: &models.PfdData{
+				Body: &models.Nef_T8PFDMgmt_PfdData{
 					ExternalAppId: "app1",
 					Self:          nefApp.Processor().genPfdDataURI("af1", "1", "app1"),
-					Pfds: map[string]models.Pfd{
+					Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 						"pfd2": pfd2,
 					},
 				},
@@ -936,9 +946,9 @@ func TestPatchIndividualApplicationPFDManagement(t *testing.T) {
 			afID:        "af1",
 			transID:     "1",
 			appID:       "app2",
-			pfdData: &models.PfdData{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app2",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": {
 						PfdId: "pfd1",
 					},
@@ -954,9 +964,9 @@ func TestPatchIndividualApplicationPFDManagement(t *testing.T) {
 			afID:        "af1",
 			transID:     "1",
 			appID:       "app1",
-			pfdData: &models.PfdData{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd3": {
 						PfdId: "pfd3",
 					},
@@ -994,85 +1004,86 @@ func TestPatchIndividualApplicationPFDManagement(t *testing.T) {
 }
 
 func TestValidatePfdManagement(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	testCases := []struct {
 		description     string
-		pfdManagement   *models.PfdManagement
+		pfdManagement   *models.Nef_T8PFDMgmt_PfdManagement
 		expectedProblem *models.ProblemDetails
-		expectedReports map[string]models.PfdReport
+		expectedReports map[string]models.Nef_T8PFDMgmt_PfdReport
 	}{
 		{
 			description: "TC1: Valid",
-			pfdManagement: &models.PfdManagement{
-				PfdDatas: map[string]models.PfdData{
+			pfdManagement: &models.Nef_T8PFDMgmt_PfdManagement{
+				PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 					"app1": {
 						ExternalAppId: "app1",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd1": pfd1,
 							"pfd2": pfd2,
 						},
 					},
 					"app2": {
 						ExternalAppId: "app2",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd3": pfd3,
 						},
 					},
 				},
 			},
 			expectedProblem: nil,
-			expectedReports: map[string]models.PfdReport{},
+			expectedReports: map[string]models.Nef_T8PFDMgmt_PfdReport{},
 		},
 		{
 			description: "TC2: Empty PfdDatas, should return ProblemDetails",
-			pfdManagement: &models.PfdManagement{
-				PfdDatas: map[string]models.PfdData{},
+			pfdManagement: &models.Nef_T8PFDMgmt_PfdManagement{
+				PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{},
 			},
 			expectedProblem: openapi.ProblemDetailsDataNotFound(DetailNoPfdData),
-			expectedReports: map[string]models.PfdReport{},
+			expectedReports: map[string]models.Nef_T8PFDMgmt_PfdReport{},
 		},
 		{
 			description: "TC3: An appID is already provisioned, should mark in PfdReports",
-			pfdManagement: &models.PfdManagement{
-				PfdDatas: map[string]models.PfdData{
+			pfdManagement: &models.Nef_T8PFDMgmt_PfdManagement{
+				PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 					"app100": {
 						ExternalAppId: "app100",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd1": pfd1,
 						},
 					},
 					"app101": {
 						ExternalAppId: "app101",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd1": pfd1,
 						},
 					},
 				},
 			},
 			expectedProblem: nil,
-			expectedReports: map[string]models.PfdReport{
-				string(models.FailureCode_APP_ID_DUPLICATED): {
+			expectedReports: map[string]models.Nef_T8PFDMgmt_PfdReport{
+				string(models.Nef_T8PFDMgmt_FailureCode_APP_ID_DUPLICATED): {
 					ExternalAppIds: []string{"app100"},
-					FailureCode:    models.FailureCode_APP_ID_DUPLICATED,
+					FailureCode:    models.Nef_T8PFDMgmt_FailureCode_APP_ID_DUPLICATED,
 				},
 			},
 		},
 		{
 			description: "TC4: None of the PFDs were created, should return ProblemDetails and mark in PfdReports",
-			pfdManagement: &models.PfdManagement{
-				PfdDatas: map[string]models.PfdData{
+			pfdManagement: &models.Nef_T8PFDMgmt_PfdManagement{
+				PfdDatas: map[string]models.Nef_T8PFDMgmt_PfdData{
 					"app100": {
 						ExternalAppId: "app100",
-						Pfds: map[string]models.Pfd{
+						Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 							"pfd1": pfd1,
 						},
 					},
 				},
 			},
 			expectedProblem: openapi.ProblemDetailsSystemFailure("None of the PFDs were created"),
-			expectedReports: map[string]models.PfdReport{
-				string(models.FailureCode_APP_ID_DUPLICATED): {
+			expectedReports: map[string]models.Nef_T8PFDMgmt_PfdReport{
+				string(models.Nef_T8PFDMgmt_FailureCode_APP_ID_DUPLICATED): {
 					ExternalAppIds: []string{"app100"},
-					FailureCode:    models.FailureCode_APP_ID_DUPLICATED,
+					FailureCode:    models.Nef_T8PFDMgmt_FailureCode_APP_ID_DUPLICATED,
 				},
 			},
 		},
@@ -1098,16 +1109,17 @@ func TestValidatePfdManagement(t *testing.T) {
 }
 
 func TestValidatePfdData(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	testCases := []struct {
 		description    string
-		pfdData        *models.PfdData
+		pfdData        *models.Nef_T8PFDMgmt_PfdData
 		expectedResult *models.ProblemDetails
 	}{
 		{
 			description: "TC1: Valid",
-			pfdData: &models.PfdData{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": pfd1,
 				},
 			},
@@ -1115,8 +1127,8 @@ func TestValidatePfdData(t *testing.T) {
 		},
 		{
 			description: "TC2: Without ExternalAppId, should return ProblemDetails",
-			pfdData: &models.PfdData{
-				Pfds: map[string]models.Pfd{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": pfd1,
 				},
 			},
@@ -1124,16 +1136,16 @@ func TestValidatePfdData(t *testing.T) {
 		},
 		{
 			description: "TC3: Empty Pfds, should return ProblemDetails",
-			pfdData: &models.PfdData{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
 			},
 			expectedResult: openapi.ProblemDetailsDataNotFound(DetailNoPfd),
 		},
 		{
 			description: "TC4: Without PfdID, should return ProblemDetails",
-			pfdData: &models.PfdData{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": {
 						FlowDescriptions: []string{
 							"permit in ip from 10.68.28.39 80 to any",
@@ -1146,9 +1158,9 @@ func TestValidatePfdData(t *testing.T) {
 		},
 		{
 			description: "TC5: FlowDescriptions, Urls and DomainNames are all empty, should return ProblemDetails",
-			pfdData: &models.PfdData{
+			pfdData: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": {
 						PfdId: "pfd1",
 					},
@@ -1167,31 +1179,32 @@ func TestValidatePfdData(t *testing.T) {
 }
 
 func TestPatchModifyPfdData(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	testCases := []struct {
 		description     string
-		old             *models.PfdData
-		new             *models.PfdData
+		old             *models.Nef_T8PFDMgmt_PfdData
+		new             *models.Nef_T8PFDMgmt_PfdData
 		expectedProblem *models.ProblemDetails
-		expectedResult  *models.PfdData
+		expectedResult  *models.Nef_T8PFDMgmt_PfdData
 	}{
 		{
 			description: "TC1: Given a PfdData with non-existing appID, should append the Pfds to the PfdData",
-			old: &models.PfdData{
+			old: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": pfd1,
 				},
 			},
-			new: &models.PfdData{
+			new: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd2": pfd2,
 				},
 			},
 			expectedProblem: nil,
-			expectedResult: &models.PfdData{
+			expectedResult: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": pfd1,
 					"pfd2": pfd2,
 				},
@@ -1199,15 +1212,15 @@ func TestPatchModifyPfdData(t *testing.T) {
 		},
 		{
 			description: "TC2: Given a PfdData with existing appID, should update the PfdData",
-			old: &models.PfdData{
+			old: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": pfd1,
 				},
 			},
-			new: &models.PfdData{
+			new: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": {
 						PfdId: "pfd1",
 						Urls: []string{
@@ -1217,9 +1230,9 @@ func TestPatchModifyPfdData(t *testing.T) {
 				},
 			},
 			expectedProblem: nil,
-			expectedResult: &models.PfdData{
+			expectedResult: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": {
 						PfdId: "pfd1",
 						Urls: []string{
@@ -1231,49 +1244,49 @@ func TestPatchModifyPfdData(t *testing.T) {
 		},
 		{
 			description: "TC3: Given a PfdData with existing appID and empty content, should delete the PfdData",
-			old: &models.PfdData{
+			old: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": pfd1,
 					"pfd2": pfd2,
 				},
 			},
-			new: &models.PfdData{
+			new: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": {
 						PfdId: "pfd1",
 					},
 				},
 			},
 			expectedProblem: nil,
-			expectedResult: &models.PfdData{
+			expectedResult: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd2": pfd2,
 				},
 			},
 		},
 		{
 			description: "TC4: Given an invalid PfdData, should return ProblemDetails",
-			old: &models.PfdData{
+			old: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": pfd1,
 				},
 			},
-			new: &models.PfdData{
+			new: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd2": {
 						PfdId: "pfd2",
 					},
 				},
 			},
 			expectedProblem: openapi.ProblemDetailsDataNotFound(DetailNoPfdInfo),
-			expectedResult: &models.PfdData{
+			expectedResult: &models.Nef_T8PFDMgmt_PfdData{
 				ExternalAppId: "app1",
-				Pfds: map[string]models.Pfd{
+				Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 					"pfd1": pfd1,
 				},
 			},
@@ -1290,7 +1303,7 @@ func TestPatchModifyPfdData(t *testing.T) {
 }
 
 func initNRFNfmStub() {
-	nrfRegisterInstanceRsp := models.NrfNfDiscoveryNfProfile{
+	nrfRegisterInstanceRsp := models.Nrf_NFDisc_NFProfile{
 		NfInstanceId: "nef-pfd-unit-testing",
 	}
 	gock.New("http://127.0.0.10:8000/nnrf-nfm/v1").
@@ -1303,23 +1316,23 @@ func initNRFNfmStub() {
 }
 
 func initNRFDiscUDRStub() {
-	searchResult := &models.SearchResult{
+	searchResult := &models.Nrf_NFDisc_SearchResult{
 		ValidityPeriod: 100,
-		NfInstances: []models.NrfNfDiscoveryNfProfile{
+		NfInstances: []models.Nrf_NFDisc_NFProfile{
 			{
 				NfInstanceId: "nef-unit-testing",
 				NfType:       "UDR",
 				NfStatus:     "REGISTERED",
-				UdrInfo: &models.UdrInfo{
-					SupportedDataSets: []models.DataSetId{
+				UdrInfo: &models.Nrf_NFMgmt_UdrInfo{
+					SupportedDataSets: []models.Nrf_NFMgmt_DataSetId{
 						"SUBSCRIPTION",
 					},
 				},
-				NfServices: []models.NrfNfDiscoveryNfService{
+				NfServices: []models.Nrf_NFDisc_NFService{
 					{
 						ServiceInstanceId: "datarepository",
 						ServiceName:       "nudr-dr",
-						Versions: []models.NfServiceVersion{
+						Versions: []models.Nrf_NFMgmt_NFServiceVersion{
 							{
 								ApiVersionInUri: "v1",
 								ApiFullVersion:  "1.0.0",
@@ -1327,7 +1340,7 @@ func initNRFDiscUDRStub() {
 						},
 						Scheme:          "http",
 						NfServiceStatus: "REGISTERED",
-						IpEndPoints: []models.IpEndPoint{
+						IpEndPoints: []models.Nrf_NFMgmt_IpEndPoint{
 							{
 								Ipv4Address: "127.0.0.4",
 								Transport:   "TCP",
@@ -1351,9 +1364,9 @@ func initNRFDiscUDRStub() {
 }
 
 func initNRFDiscPCFStub() {
-	searchResult := &models.SearchResult{
+	searchResult := &models.Nrf_NFDisc_SearchResult{
 		ValidityPeriod: 100,
-		NfInstances: []models.NrfNfDiscoveryNfProfile{
+		NfInstances: []models.Nrf_NFDisc_NFProfile{
 			{
 				NfInstanceId: "nef-unit-testing",
 				NfType:       "PCF",
@@ -1361,17 +1374,17 @@ func initNRFDiscPCFStub() {
 				Ipv4Addresses: []string{
 					"127.0.0.7",
 				},
-				PcfInfo: &models.PcfInfo{
+				PcfInfo: &models.Nrf_NFMgmt_PcfInfo{
 					DnnList: []string{
 						"free5gc",
 						"internet",
 					},
 				},
-				NfServices: []models.NrfNfDiscoveryNfService{
+				NfServices: []models.Nrf_NFDisc_NFService{
 					{
 						ServiceInstanceId: "1",
 						ServiceName:       "npcf-policyauthorization",
-						Versions: []models.NfServiceVersion{
+						Versions: []models.Nrf_NFMgmt_NFServiceVersion{
 							{
 								ApiVersionInUri: "v1",
 								ApiFullVersion:  "1.0.0",
@@ -1379,7 +1392,7 @@ func initNRFDiscPCFStub() {
 						},
 						Scheme:          "http",
 						NfServiceStatus: "REGISTERED",
-						IpEndPoints: []models.IpEndPoint{
+						IpEndPoints: []models.Nrf_NFMgmt_IpEndPoint{
 							{
 								Ipv4Address: "127.0.0.7",
 								Transport:   "TCP",
@@ -1410,7 +1423,7 @@ func initUDRDrGetPfdDatasStub() {
 		MatchParam("appId", "app1").
 		Persist().
 		Reply(http.StatusOK).
-		JSON([]models.PfdDataForApp{pfdDataForApp1, pfdDataForApp2})
+		JSON([]models.Nef_PFDMgmt_PfdDataForApp{pfdDataForApp1, pfdDataForApp2})
 
 	gock.New("http://127.0.0.4:8000/nudr-dr/v1").
 		Get("/application-data/pfds").

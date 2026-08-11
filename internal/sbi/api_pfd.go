@@ -70,7 +70,7 @@ func (s *Server) apiGetPFDManagementTransactions(gc *gin.Context) {
 }
 
 func (s *Server) apiPostPFDManagementTransactions(gc *gin.Context) {
-	var pfdMng models.PfdManagement
+	var pfdMng models.Nef_T8PFDMgmt_PfdManagement
 	reqBody, err := gc.GetRawData()
 	if err != nil {
 		logger.SBILog.Errorf("Get Request Body error: %+v", err)
@@ -102,7 +102,7 @@ func (s *Server) apiGetIndividualPFDManagementTransaction(gc *gin.Context) {
 }
 
 func (s *Server) apiPutIndividualPFDManagementTransaction(gc *gin.Context) {
-	var pfdMng models.PfdManagement
+	var pfdMng models.Nef_T8PFDMgmt_PfdManagement
 	reqBody, err := gc.GetRawData()
 	if err != nil {
 		logger.SBILog.Errorf("Get Request Body error: %+v", err)
@@ -142,7 +142,7 @@ func (s *Server) apiDeleteIndividualApplicationPFDManagement(gc *gin.Context) {
 }
 
 func (s *Server) apiPutIndividualApplicationPFDManagement(gc *gin.Context) {
-	var pfdData models.PfdData
+	var pfdData models.Nef_T8PFDMgmt_PfdData
 	reqBody, err := gc.GetRawData()
 	if err != nil {
 		logger.SBILog.Errorf("Get Request Body error: %+v", err)
@@ -166,7 +166,7 @@ func (s *Server) apiPutIndividualApplicationPFDManagement(gc *gin.Context) {
 }
 
 func (s *Server) apiPatchIndividualApplicationPFDManagement(gc *gin.Context) {
-	var pfdData models.PfdData
+	var pfdData models.Nef_T8PFDMgmt_PfdData
 	reqBody, err := gc.GetRawData()
 	if err != nil {
 		logger.SBILog.Errorf("Get Request Body error: %+v", err)

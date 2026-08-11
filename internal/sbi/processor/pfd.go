@@ -42,7 +42,7 @@ func (p *Processor) GetPFDManagementTransactions(c *gin.Context, scsAsID string)
 	af.Mu.RLock()
 	defer af.Mu.RUnlock()
 
-	var pfdMngs []models.PfdManagement
+	var pfdMngs []models.Nef_T8PFDMgmt_PfdManagement
 	for _, afPfdTr := range af.PfdTrans {
 		pfdMng, pd := p.buildPfdManagement(scsAsID, afPfdTr)
 		if pd != nil {
@@ -63,7 +63,7 @@ func (p *Processor) GetPFDManagementTransactions(c *gin.Context, scsAsID string)
 func (p *Processor) PostPFDManagementTransactions(
 	c *gin.Context,
 	scsAsID string,
-	pfdMng *models.PfdManagement,
+	pfdMng *models.Nef_T8PFDMgmt_PfdManagement,
 ) {
 	logger.PFDManageLog.Infof("PostPFDManagementTransactions - scsAsID[%s]", scsAsID)
 
@@ -111,7 +111,7 @@ func (p *Processor) PostPFDManagementTransactions(
 		} else {
 			pfdData.Self = p.genPfdDataURI(scsAsID, afPfdTr.TransID, appID)
 			pfdMng.PfdDatas[appID] = pfdData
-			pfdNotifyContext.AddNotification(appID, &models.PfdChangeNotification{
+			pfdNotifyContext.AddNotification(appID, &models.Nef_PFDMgmt_PfdChangeNotification{
 				ApplicationId: appID,
 				Pfds:          pfdDataForApp.Pfds,
 			})
@@ -165,7 +165,7 @@ func (p *Processor) DeletePFDManagementTransactions(c *gin.Context, scsAsID stri
 				c.JSON(int(pd.Status), pd)
 				return
 			}
-			pfdNotifyContext.AddNotification(extAppID, &models.PfdChangeNotification{
+			pfdNotifyContext.AddNotification(extAppID, &models.Nef_PFDMgmt_PfdChangeNotification{
 				ApplicationId: extAppID,
 				RemovalFlag:   true,
 			})
@@ -227,7 +227,7 @@ func (p *Processor) GetIndividualPFDManagementTransaction(
 func (p *Processor) PutIndividualPFDManagementTransaction(
 	c *gin.Context,
 	scsAsID, transID string,
-	pfdMng *models.PfdManagement,
+	pfdMng *models.Nef_T8PFDMgmt_PfdManagement,
 ) {
 	logger.PFDManageLog.Infof("PutIndividualPFDManagementTransaction - scsAsID[%s], transID[%s]",
 		scsAsID, transID)
@@ -280,7 +280,7 @@ func (p *Processor) PutIndividualPFDManagementTransaction(
 			c.JSON(int(pd.Status), pd)
 			return
 		}
-		pfdNotifyContext.AddNotification(appID, &models.PfdChangeNotification{
+		pfdNotifyContext.AddNotification(appID, &models.Nef_PFDMgmt_PfdChangeNotification{
 			ApplicationId: appID,
 			RemovalFlag:   true,
 		})
@@ -296,7 +296,7 @@ func (p *Processor) PutIndividualPFDManagementTransaction(
 		} else {
 			pfdData.Self = p.genPfdDataURI(scsAsID, afPfdTr.TransID, appID)
 			pfdMng.PfdDatas[appID] = pfdData
-			pfdNotifyContext.AddNotification(appID, &models.PfdChangeNotification{
+			pfdNotifyContext.AddNotification(appID, &models.Nef_PFDMgmt_PfdChangeNotification{
 				ApplicationId: appID,
 				Pfds:          pfdDataForAppExt.Pfds,
 			})
@@ -355,7 +355,7 @@ func (p *Processor) DeleteIndividualPFDManagementTransaction(
 			c.JSON(int(pd.Status), pd)
 			return
 		}
-		pfdNotifyContext.AddNotification(extAppID, &models.PfdChangeNotification{
+		pfdNotifyContext.AddNotification(extAppID, &models.Nef_PFDMgmt_PfdChangeNotification{
 			ApplicationId: extAppID,
 			RemovalFlag:   true,
 		})
@@ -422,7 +422,7 @@ func (p *Processor) GetIndividualApplicationPFDManagement(
 		return
 	}
 
-	pfdData := convertPdfDataForAppExtToPfdData(&pdfData.PfdDataForAppExt)
+	pfdData := convertPdfDataForAppExtToPfdData(pdfData.Udr_DR_PfdDataForAppExt)
 	pfdData.Self = p.genPfdDataURI(scsAsID, transID, appID)
 
 	c.JSON(http.StatusOK, pfdData)
@@ -474,7 +474,7 @@ func (p *Processor) DeleteIndividualApplicationPFDManagement(
 		return
 	}
 	afPfdTr.DeleteExtAppID(appID)
-	pfdNotifyContext.AddNotification(appID, &models.PfdChangeNotification{
+	pfdNotifyContext.AddNotification(appID, &models.Nef_PFDMgmt_PfdChangeNotification{
 		ApplicationId: appID,
 		RemovalFlag:   true,
 	})
@@ -493,7 +493,7 @@ func (p *Processor) DeleteIndividualApplicationPFDManagement(
 func (p *Processor) PutIndividualApplicationPFDManagement(
 	c *gin.Context,
 	scsAsID, transID, appID string,
-	pfdData *models.PfdData,
+	pfdData *models.Nef_T8PFDMgmt_PfdData,
 ) {
 	logger.PFDManageLog.Infof("PutIndividualApplicationPFDManagement - scsAsID[%s], transID[%s], appID[%s]",
 		scsAsID, transID, appID)
@@ -542,7 +542,7 @@ func (p *Processor) PutIndividualApplicationPFDManagement(
 		return
 	}
 	pfdData.Self = p.genPfdDataURI(scsAsID, transID, appID)
-	pfdNotifyContext.AddNotification(appID, &models.PfdChangeNotification{
+	pfdNotifyContext.AddNotification(appID, &models.Nef_PFDMgmt_PfdChangeNotification{
 		ApplicationId: appID,
 		Pfds:          pfdDataForApp.Pfds,
 	})
@@ -557,7 +557,7 @@ func (p *Processor) PutIndividualApplicationPFDManagement(
 func (p *Processor) PatchIndividualApplicationPFDManagement(
 	c *gin.Context,
 	scsAsID, transID, appID string,
-	pfdData *models.PfdData,
+	pfdData *models.Nef_T8PFDMgmt_PfdData,
 ) {
 	logger.PFDManageLog.Infof("PatchIndividualApplicationPFDManagement - scsAsID[%s], transID[%s], appID[%s]",
 		scsAsID, transID, appID)
@@ -616,7 +616,7 @@ func (p *Processor) PatchIndividualApplicationPFDManagement(
 		return
 	}
 
-	oldPfdData := convertPdfDataForAppExtToPfdData(&pdfData.PfdDataForAppExt)
+	oldPfdData := convertPdfDataForAppExtToPfdData(pdfData.Udr_DR_PfdDataForAppExt)
 	if pd := patchModifyPfdData(oldPfdData, pfdData); pd != nil {
 		c.Set(sbi.IN_PB_DETAILS_CTX_STR, pd.Cause)
 		c.JSON(int(pd.Status), pd)
@@ -630,7 +630,7 @@ func (p *Processor) PatchIndividualApplicationPFDManagement(
 		return
 	}
 	oldPfdData.Self = p.genPfdDataURI(scsAsID, transID, appID)
-	pfdNotifyContext.AddNotification(appID, &models.PfdChangeNotification{
+	pfdNotifyContext.AddNotification(appID, &models.Nef_PFDMgmt_PfdChangeNotification{
 		ApplicationId: appID,
 		Pfds:          pfdDataForAppExt.Pfds,
 	})
@@ -639,13 +639,13 @@ func (p *Processor) PatchIndividualApplicationPFDManagement(
 }
 
 func (p *Processor) buildPfdManagement(afID string, afPfdTr *nef_context.AfPfdTransaction) (
-	*models.PfdManagement, *models.ProblemDetails,
+	*models.Nef_T8PFDMgmt_PfdManagement, *models.ProblemDetails,
 ) {
 	transID := afPfdTr.TransID
 	appIDs := afPfdTr.GetExtAppIDs()
-	pfdMng := &models.PfdManagement{
+	pfdMng := &models.Nef_T8PFDMgmt_PfdManagement{
 		Self:     p.genPfdManagementURI(afID, transID),
-		PfdDatas: make(map[string]models.PfdData, len(appIDs)),
+		PfdDatas: make(map[string]models.Nef_T8PFDMgmt_PfdData, len(appIDs)),
 	}
 
 	data, pd, err := p.Consumer().AppDataPfdsGet(appIDs)
@@ -670,14 +670,16 @@ func (p *Processor) buildPfdManagement(afID string, afPfdTr *nef_context.AfPfdTr
 	return pfdMng, nil
 }
 
-func (p *Processor) storePfdDataToUDR(appID string, pfdDataForApp *models.PfdDataForAppExt) *models.PfdReport {
+func (p *Processor) storePfdDataToUDR(
+	appID string, pfdDataForApp *models.Udr_DR_PfdDataForAppExt,
+) *models.Nef_T8PFDMgmt_PfdReport {
 	_, pd, errAppData := p.Consumer().AppDataPfdsAppIdPut(appID, pfdDataForApp)
 
 	switch {
 	case errAppData != nil || pd != nil:
-		return &models.PfdReport{
+		return &models.Nef_T8PFDMgmt_PfdReport{
 			ExternalAppIds: []string{appID},
-			FailureCode:    models.FailureCode_MALFUNCTION,
+			FailureCode:    models.Nef_T8PFDMgmt_FailureCode_MALFUNCTION,
 		}
 	}
 
@@ -702,7 +704,7 @@ func (p *Processor) deletePfdDataFromUDR(appID string) *models.ProblemDetails {
 }
 
 // The behavior of PATCH update is based on TS 29.250 v1.15.1 clause 4.4.1
-func patchModifyPfdData(oldPfdData, newPfdData *models.PfdData) *models.ProblemDetails {
+func patchModifyPfdData(oldPfdData, newPfdData *models.Nef_T8PFDMgmt_PfdData) *models.ProblemDetails {
 	for pfdID, newPfd := range newPfdData.Pfds {
 		_, exist := oldPfdData.Pfds[pfdID]
 		if len(newPfd.FlowDescriptions) == 0 && len(newPfd.Urls) == 0 && len(newPfd.DomainNames) == 0 {
@@ -721,12 +723,12 @@ func patchModifyPfdData(oldPfdData, newPfdData *models.PfdData) *models.ProblemD
 	return nil
 }
 
-func convertPfdDataToPfdDataForApp(pfdData *models.PfdData) *models.PfdDataForAppExt {
-	pfdDataForApp := &models.PfdDataForAppExt{
+func convertPfdDataToPfdDataForApp(pfdData *models.Nef_T8PFDMgmt_PfdData) *models.Udr_DR_PfdDataForAppExt {
+	pfdDataForApp := &models.Udr_DR_PfdDataForAppExt{
 		ApplicationId: pfdData.ExternalAppId,
 	}
 	for _, pfd := range pfdData.Pfds {
-		var pfdContent models.PfdContent
+		var pfdContent models.Nef_PFDMgmt_PfdContent
 		pfdContent.PfdId = pfd.PfdId
 		pfdContent.FlowDescriptions = pfd.FlowDescriptions
 		pfdContent.Urls = pfd.Urls
@@ -736,13 +738,13 @@ func convertPfdDataToPfdDataForApp(pfdData *models.PfdData) *models.PfdDataForAp
 	return pfdDataForApp
 }
 
-func convertPdfDataForAppExtToPfdData(pfdDataForAppExt *models.PfdDataForAppExt) *models.PfdData {
-	pfdData := &models.PfdData{
+func convertPdfDataForAppExtToPfdData(pfdDataForAppExt *models.Udr_DR_PfdDataForAppExt) *models.Nef_T8PFDMgmt_PfdData {
+	pfdData := &models.Nef_T8PFDMgmt_PfdData{
 		ExternalAppId: pfdDataForAppExt.ApplicationId,
-		Pfds:          make(map[string]models.Pfd, len(pfdDataForAppExt.Pfds)),
+		Pfds:          make(map[string]models.Nef_T8PFDMgmt_Pfd, len(pfdDataForAppExt.Pfds)),
 	}
 	for _, pfdContent := range pfdDataForAppExt.Pfds {
-		var pfd models.Pfd
+		var pfd models.Nef_T8PFDMgmt_Pfd
 		pfd.PfdId = pfdContent.PfdId
 		pfd.FlowDescriptions = pfdContent.FlowDescriptions
 		pfd.Urls = pfdContent.Urls
@@ -752,12 +754,14 @@ func convertPdfDataForAppExtToPfdData(pfdDataForAppExt *models.PfdDataForAppExt)
 	return pfdData
 }
 
-func convertPdfDataForAppExtToPfdDataForApp(pfdDataForAppExt *models.PfdDataForAppExt) *models.PfdDataForApp {
-	pfdDataForApp := &models.PfdDataForApp{
+func convertPdfDataForAppExtToPfdDataForApp(
+	pfdDataForAppExt *models.Udr_DR_PfdDataForAppExt,
+) *models.Nef_PFDMgmt_PfdDataForApp {
+	pfdDataForApp := &models.Nef_PFDMgmt_PfdDataForApp{
 		ApplicationId: pfdDataForAppExt.ApplicationId,
 	}
 	for _, pfdContent := range pfdDataForAppExt.Pfds {
-		var pfd models.PfdContent
+		var pfd models.Nef_PFDMgmt_PfdContent
 		pfd.PfdId = pfdContent.PfdId
 		pfd.FlowDescriptions = pfdContent.FlowDescriptions
 		pfd.Urls = pfdContent.Urls
@@ -767,12 +771,12 @@ func convertPdfDataForAppExtToPfdDataForApp(pfdDataForAppExt *models.PfdDataForA
 	return pfdDataForApp
 }
 
-func convertPfdDataToPfdDataForAppExt(pfdData *models.PfdData) *models.PfdDataForAppExt {
-	pfdDataForAppExt := &models.PfdDataForAppExt{
+func convertPfdDataToPfdDataForAppExt(pfdData *models.Nef_T8PFDMgmt_PfdData) *models.Udr_DR_PfdDataForAppExt {
+	pfdDataForAppExt := &models.Udr_DR_PfdDataForAppExt{
 		ApplicationId: pfdData.ExternalAppId,
 	}
 	for _, pfd := range pfdData.Pfds {
-		var pfdContent models.PfdContent
+		var pfdContent models.Nef_PFDMgmt_PfdContent
 		pfdContent.PfdId = pfd.PfdId
 		pfdContent.FlowDescriptions = pfd.FlowDescriptions
 		pfdContent.Urls = pfd.Urls
@@ -796,10 +800,10 @@ func (p *Processor) genPfdDataURI(afID, transID, appID string) string {
 
 func validatePfdManagement(
 	afID, transID string,
-	pfdMng *models.PfdManagement,
+	pfdMng *models.Nef_T8PFDMgmt_PfdManagement,
 	nefCtx *nef_context.NefContext,
 ) *models.ProblemDetails {
-	pfdMng.PfdReports = make(map[string]models.PfdReport)
+	pfdMng.PfdReports = make(map[string]models.Nef_T8PFDMgmt_PfdReport)
 
 	if len(pfdMng.PfdDatas) == 0 {
 		return openapi.ProblemDetailsDataNotFound(DetailNoPfdData)
@@ -810,9 +814,9 @@ func validatePfdManagement(
 		appAfID, appTransID, ok := nefCtx.IsAppIDExisted(appID)
 		if ok && (appAfID != afID || appTransID != transID) {
 			delete(pfdMng.PfdDatas, appID)
-			addPfdReport(pfdMng, &models.PfdReport{
+			addPfdReport(pfdMng, &models.Nef_T8PFDMgmt_PfdReport{
 				ExternalAppIds: []string{appID},
-				FailureCode:    models.FailureCode_APP_ID_DUPLICATED,
+				FailureCode:    models.Nef_T8PFDMgmt_FailureCode_APP_ID_DUPLICATED,
 			})
 		}
 		if pd := validatePfdData(&pfdData, false); pd != nil {
@@ -828,7 +832,7 @@ func validatePfdManagement(
 	return nil
 }
 
-func validatePfdData(pfdData *models.PfdData, isPatch bool) *models.ProblemDetails {
+func validatePfdData(pfdData *models.Nef_T8PFDMgmt_PfdData, isPatch bool) *models.ProblemDetails {
 	if pfdData.ExternalAppId == "" {
 		return openapi.ProblemDetailsDataNotFound(DetailNoExtAppID)
 	}
@@ -850,7 +854,7 @@ func validatePfdData(pfdData *models.PfdData, isPatch bool) *models.ProblemDetai
 	return nil
 }
 
-func addPfdReport(pfdMng *models.PfdManagement, newReport *models.PfdReport) {
+func addPfdReport(pfdMng *models.Nef_T8PFDMgmt_PfdManagement, newReport *models.Nef_T8PFDMgmt_PfdReport) {
 	if oldReport, ok := pfdMng.PfdReports[string(newReport.FailureCode)]; ok {
 		oldReport.ExternalAppIds = append(oldReport.ExternalAppIds, newReport.ExternalAppIds...)
 	} else {

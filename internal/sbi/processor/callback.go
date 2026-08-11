@@ -19,7 +19,7 @@ var afCallbackHTTPClient = &http.Client{}
 
 func (p *Processor) SmfNotification(
 	c *gin.Context,
-	eeNotif *models.NsmfEventExposureNotification,
+	eeNotif *models.Smf_EvtExpos_NsmfEventExposureNotification,
 ) {
 	logger.TrafInfluLog.Infof("SmfNotification - NotifId[%s]", eeNotif.NotifId)
 
@@ -46,7 +46,7 @@ func (p *Processor) SmfNotification(
 	}
 
 	afCallbackTokenCtx, pd, err := p.Context().GetTokenCtx(
-		models.ServiceName("nnef-callback"), models.NrfNfManagementNfType_AF)
+		models.Nrf_NFMgmt_ServiceName("nnef-callback"), models.Nrf_NFMgmt_NFType_AF)
 	if err != nil {
 		logger.TrafInfluLog.Errorf("Get token for AF callback failed: %+v", pd)
 		failure := openapi.ProblemDetailsSystemFailure("get token for AF callback failed")
@@ -72,10 +72,10 @@ func (p *Processor) SmfNotification(
 
 func postSmfEventExposureNotificationToAf(
 	notifDestination string,
-	eeNotif *models.NsmfEventExposureNotification,
+	eeNotif *models.Smf_EvtExpos_NsmfEventExposureNotification,
 	requestCtx context.Context,
 ) error {
-	reqBody, err := openapi.Serialize(eeNotif, "application/json")
+	_, reqBody, err := openapi.Serialize(eeNotif, "application/json")
 	if err != nil {
 		return fmt.Errorf("serialize SMF notification failed: %w", err)
 	}
