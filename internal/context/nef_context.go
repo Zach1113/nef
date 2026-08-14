@@ -3,12 +3,14 @@ package context
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/free5gc/nef/internal/logger"
 	"github.com/free5gc/nef/pkg/factory"
 	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/openapi/oauth"
+	"github.com/google/uuid"
 )
 
 type nef interface {
@@ -163,8 +165,65 @@ func (c *NefContext) GetTokenCtx(serviceName models.ServiceName, targetNF models
 	if !c.OAuth2Required {
 		return context.TODO(), nil, nil
 	}
-	return oauth.GetTokenCtx(models.NrfNfManagementNfType_NEF, targetNF,
-		c.nfInstID, c.Config().NrfUri(), string(serviceName))
+	return oauth.GetTokenCtx(c.tokenRequest(serviceName, targetNF))
+}
+
+func (c *NefContext) GetTokenCtxForNFInstance(serviceName models.ServiceName,
+	targetNF models.NrfNfManagementNfType, targetNFInstanceID string,
+) (context.Context, *models.ProblemDetails, error) {
+	if !c.OAuth2Required {
+		return context.TODO(), nil, nil
+	}
+	targetID, err := uuid.Parse(strings.TrimSpace(targetNFInstanceID))
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid target NF instance ID: %w", err)
+	}
+	if targetID.Version() != 4 {
+		return nil, nil, fmt.Errorf("invalid target NF instance ID: UUID must be version 4")
+	}
+	return oauth.GetTokenCtx(c.tokenRequestForNFInstance(serviceName, targetNF, targetNFInstanceID))
+}
+
+func (c *NefContext) GetTokenCtxForNRF(serviceName models.ServiceName) (
+	context.Context, *models.ProblemDetails, error,
+) {
+	return c.GetTokenCtxForNFInstance(
+		serviceName, models.NrfNfManagementNfType_NRF, c.Config().NrfNfInstanceID())
+}
+
+func (c *NefContext) tokenRequest(serviceName models.ServiceName,
+	targetNF models.NrfNfManagementNfType,
+) oauth.TokenRequest {
+	return oauth.TokenRequest{
+		ConsumerNFType: models.NrfNfManagementNfType_NEF, ConsumerNFInstanceID: c.nfInstID,
+		TargetNFType: targetNF, NRFURI: c.Config().NrfUri(), Scope: string(serviceName),
+	}
+}
+
+func (c *NefContext) tokenRequestForNFInstance(serviceName models.ServiceName,
+	targetNF models.NrfNfManagementNfType, targetNFInstanceID string,
+) oauth.TokenRequest {
+	request := c.tokenRequest(serviceName, targetNF)
+	request.TargetNFInstanceID = targetNFInstanceID
+	return request
+}
+
+func (c *NefContext) SetOAuth2Required(required bool) error {
+	if !required {
+		c.OAuth2Required = false
+		return nil
+	}
+	if strings.TrimSpace(c.Config().NrfCertPem()) == "" {
+		return fmt.Errorf("OAuth2 enabled but NRF certificate path is empty")
+	}
+	if strings.TrimSpace(c.Config().NrfUri()) == "" {
+		return fmt.Errorf("OAuth2 enabled but NRF URI is empty")
+	}
+	if err := uuid.Validate(c.Config().NrfNfInstanceID()); err != nil {
+		return fmt.Errorf("OAuth2 enabled but trusted NRF instance ID is invalid: %w", err)
+	}
+	c.OAuth2Required = true
+	return nil
 }
 
 // AuthorizationCheck validates the inbound OAuth2 bearer token against serviceName.
@@ -178,5 +237,7 @@ func (c *NefContext) AuthorizationCheck(token string, serviceName models.Service
 		"NefContext::AuthorizationCheck: tokenPresent[%t] tokenLen[%d] serviceName[%s]",
 		token != "", len(token), serviceName,
 	)
-	return oauth.VerifyOAuth(token, string(serviceName), c.Config().NrfCertPem())
+	return oauth.VerifyOAuth(token, string(serviceName), oauth.AudiencePolicy{
+		NFInstanceID: c.nfInstID, NFType: models.NrfNfManagementNfType_NEF,
+	}, c.Config().NrfNfInstanceID(), c.Config().NrfCertPem())
 }
