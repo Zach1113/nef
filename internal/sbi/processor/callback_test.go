@@ -22,6 +22,7 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestBindOAuthTokenToRequest(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	t.Run("context without token source", func(t *testing.T) {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://af.example.com", nil)
 		if err != nil {
@@ -57,6 +58,7 @@ func TestBindOAuthTokenToRequest(t *testing.T) {
 }
 
 func TestPostSmfEventExposureNotificationToAfWithToken(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	originalClient := afCallbackHTTPClient
 	t.Cleanup(func() { afCallbackHTTPClient = originalClient })
 
@@ -74,13 +76,14 @@ func TestPostSmfEventExposureNotificationToAfWithToken(t *testing.T) {
 	tok := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "token-for-af", TokenType: "Bearer"})
 	tokenCtx := context.WithValue(context.Background(), openapi.ContextOAuth2, tok)
 
-	eeNotif := &models.NsmfEventExposureNotification{NotifId: "notif-1"}
+	eeNotif := &models.Smf_EvtExpos_NsmfEventExposureNotification{NotifId: "notif-1"}
 	if err := postSmfEventExposureNotificationToAf("http://af.example.com/notify", eeNotif, tokenCtx); err != nil {
 		t.Fatalf("post callback failed: %v", err)
 	}
 }
 
 func TestPostSmfEventExposureNotificationToAfNon2xx(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	originalClient := afCallbackHTTPClient
 	t.Cleanup(func() { afCallbackHTTPClient = originalClient })
 
@@ -92,7 +95,7 @@ func TestPostSmfEventExposureNotificationToAfNon2xx(t *testing.T) {
 		}, nil
 	})}
 
-	eeNotif := &models.NsmfEventExposureNotification{NotifId: "notif-2"}
+	eeNotif := &models.Smf_EvtExpos_NsmfEventExposureNotification{NotifId: "notif-2"}
 	err := postSmfEventExposureNotificationToAf("http://af.example.com/notify", eeNotif, context.TODO())
 	if err == nil {
 		t.Fatal("expected error when AF callback returns non-2xx")
@@ -109,9 +112,10 @@ func newGinContext() (*gin.Context, *httptest.ResponseRecorder) {
 // TestSmfNotification_NotifIdNotFound verifies that SmfNotification returns
 // 404 when the NotifId has no matching subscription in NefContext.
 func TestSmfNotification_NotifIdNotFound(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	c, w := newGinContext()
 
-	notif := &models.NsmfEventExposureNotification{NotifId: "unknown-corr-id"}
+	notif := &models.Smf_EvtExpos_NsmfEventExposureNotification{NotifId: "unknown-corr-id"}
 	nefApp.Processor().SmfNotification(c, notif)
 	c.Writer.WriteHeaderNow()
 
@@ -121,11 +125,12 @@ func TestSmfNotification_NotifIdNotFound(t *testing.T) {
 // TestSmfNotification_EmptyNotifDest verifies that SmfNotification returns
 // 500 when the matching subscription has an empty notificationDestination.
 func TestSmfNotification_EmptyNotifDest(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	nefCtx := nefApp.Context()
 	af := nefCtx.NewAf("af-callback-test-1")
 	af.Mu.Lock()
 	correID := nefCtx.NewCorreID()
-	tiSub := &models.NefTrafficInfluSub{
+	tiSub := &models.Nef_TrafInfl_TrafficInfluSub{
 		NotificationDestination: "", // intentionally empty
 	}
 	afSub := af.NewSub(correID, tiSub)
@@ -138,7 +143,7 @@ func TestSmfNotification_EmptyNotifDest(t *testing.T) {
 	}()
 
 	c, w := newGinContext()
-	notif := &models.NsmfEventExposureNotification{NotifId: afSub.NotifCorreID}
+	notif := &models.Smf_EvtExpos_NsmfEventExposureNotification{NotifId: afSub.NotifCorreID}
 	nefApp.Processor().SmfNotification(c, notif)
 	c.Writer.WriteHeaderNow()
 
@@ -148,6 +153,7 @@ func TestSmfNotification_EmptyNotifDest(t *testing.T) {
 // TestSmfNotification_SuccessfulForward verifies that SmfNotification forwards
 // the notification to the AF and returns 204 when AF responds successfully.
 func TestSmfNotification_SuccessfulForward(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	originalClient := afCallbackHTTPClient
 	t.Cleanup(func() { afCallbackHTTPClient = originalClient })
 
@@ -165,7 +171,7 @@ func TestSmfNotification_SuccessfulForward(t *testing.T) {
 	af := nefCtx.NewAf("af-callback-test-2")
 	af.Mu.Lock()
 	correID := nefCtx.NewCorreID()
-	tiSub := &models.NefTrafficInfluSub{
+	tiSub := &models.Nef_TrafInfl_TrafficInfluSub{
 		NotificationDestination: "http://af.example.com/notify",
 	}
 	afSub := af.NewSub(correID, tiSub)
@@ -178,7 +184,7 @@ func TestSmfNotification_SuccessfulForward(t *testing.T) {
 	}()
 
 	c, w := newGinContext()
-	notif := &models.NsmfEventExposureNotification{NotifId: afSub.NotifCorreID}
+	notif := &models.Smf_EvtExpos_NsmfEventExposureNotification{NotifId: afSub.NotifCorreID}
 	nefApp.Processor().SmfNotification(c, notif)
 	c.Writer.WriteHeaderNow()
 
@@ -189,6 +195,7 @@ func TestSmfNotification_SuccessfulForward(t *testing.T) {
 // TestSmfNotification_AfReturnsError verifies that SmfNotification returns
 // 502 (BadGateway) when the AF callback endpoint responds with a non-2xx status.
 func TestSmfNotification_AfReturnsError(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	originalClient := afCallbackHTTPClient
 	t.Cleanup(func() { afCallbackHTTPClient = originalClient })
 
@@ -204,7 +211,7 @@ func TestSmfNotification_AfReturnsError(t *testing.T) {
 	af := nefCtx.NewAf("af-callback-test-3")
 	af.Mu.Lock()
 	correID := nefCtx.NewCorreID()
-	tiSub := &models.NefTrafficInfluSub{
+	tiSub := &models.Nef_TrafInfl_TrafficInfluSub{
 		NotificationDestination: "http://af.example.com/notify",
 	}
 	afSub := af.NewSub(correID, tiSub)
@@ -217,7 +224,7 @@ func TestSmfNotification_AfReturnsError(t *testing.T) {
 	}()
 
 	c, w := newGinContext()
-	notif := &models.NsmfEventExposureNotification{NotifId: afSub.NotifCorreID}
+	notif := &models.Smf_EvtExpos_NsmfEventExposureNotification{NotifId: afSub.NotifCorreID}
 	nefApp.Processor().SmfNotification(c, notif)
 	c.Writer.WriteHeaderNow()
 

@@ -9,8 +9,8 @@ import (
 	"github.com/free5gc/nef/internal/logger"
 	"github.com/free5gc/openapi"
 	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/openapi/nrf/NFDiscovery"
-	"github.com/free5gc/openapi/pcf/PolicyAuthorization"
+	"github.com/free5gc/openapi/nrf/NFDisc"
+	"github.com/free5gc/openapi/pcf/PolAuth"
 	sbi_metrics "github.com/free5gc/util/metrics/sbi"
 )
 
@@ -18,21 +18,21 @@ type npcfService struct {
 	consumer *Consumer
 
 	mu      sync.RWMutex
-	clients map[string]*PolicyAuthorization.APIClient
+	clients map[string]*PolAuth.APIClient
 }
 
-func (s *npcfService) getPolicyAuthClient(uri string) *PolicyAuthorization.APIClient {
+func (s *npcfService) getPolicyAuthClient(uri string) *PolAuth.APIClient {
 	s.mu.RLock()
 	if client, ok := s.clients[uri]; ok {
 		defer s.mu.RUnlock()
 		return client
 	}
 
-	configuration := PolicyAuthorization.NewConfiguration()
+	configuration := PolAuth.NewConfiguration()
 	configuration.SetBasePath(uri)
 	configuration.SetMetrics(sbi_metrics.SbiMetricHook)
 	configuration.SetHTTPClient(http.DefaultClient)
-	cli := PolicyAuthorization.NewAPIClient(configuration)
+	cli := PolAuth.NewAPIClient(configuration)
 
 	s.mu.RUnlock()
 	s.mu.Lock()
@@ -44,17 +44,17 @@ func (s *npcfService) getPolicyAuthClient(uri string) *PolicyAuthorization.APICl
 func (s *npcfService) getPcfPolicyAuthUri() (string, error) {
 	uri := s.consumer.Context().PcfPaUri()
 	if uri == "" {
-		localVarOptionals := NFDiscovery.SearchNFInstancesRequest{
-			ServiceNames: []models.ServiceName{
-				models.ServiceName_NPCF_POLICYAUTHORIZATION,
+		localVarOptionals := NFDisc.SearchNFInstancesRequest{
+			ServiceNames: []models.Nrf_NFMgmt_ServiceName{
+				models.Nrf_NFMgmt_ServiceName_NPCF_POLICYAUTHORIZATION,
 			},
 		}
 		logger.ConsumerLog.Infoln(s.consumer.Config().NrfUri())
 		_, sUri, err := s.consumer.SearchNFInstances(
 			s.consumer.Config().NrfUri(),
-			models.ServiceName_NPCF_POLICYAUTHORIZATION,
-			models.NrfNfManagementNfType_PCF,
-			models.NrfNfManagementNfType_NEF,
+			models.Nrf_NFMgmt_ServiceName_NPCF_POLICYAUTHORIZATION,
+			models.Nrf_NFMgmt_NFType_PCF,
+			models.Nrf_NFMgmt_NFType_NEF,
 			&localVarOptionals,
 		)
 		if err == nil {
@@ -71,7 +71,7 @@ func (s *npcfService) getPcfPolicyAuthUri() (string, error) {
 // Resource structure: 5.3.1
 // Request/Response: 5.3.3.3.1
 func (s *npcfService) GetAppSession(appSessionId string) (
-	*models.AppSessionContext, *models.ProblemDetails, error,
+	*models.Pcf_PolAuth_AppSessionContext, *models.ProblemDetails, error,
 ) {
 	uri, err := s.getPcfPolicyAuthUri()
 	if err != nil {
@@ -85,12 +85,12 @@ func (s *npcfService) GetAppSession(appSessionId string) (
 	}
 
 	ctx, _, err := s.consumer.Context().GetTokenCtx(
-		models.ServiceName_NPCF_POLICYAUTHORIZATION, models.NrfNfManagementNfType_PCF)
+		models.Nrf_NFMgmt_ServiceName_NPCF_POLICYAUTHORIZATION, models.Nrf_NFMgmt_NFType_PCF)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	appSessionsRequest := PolicyAuthorization.GetAppSessionRequest{
+	appSessionsRequest := PolAuth.GetAppSessionRequest{
 		AppSessionId: &appSessionId,
 	}
 
@@ -102,9 +102,9 @@ func (s *npcfService) GetAppSession(appSessionId string) (
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case PolicyAuthorization.GetAppSessionError:
+			case PolAuth.GetAppSessionError:
 				// TODO: handle the 307/308 http status code
-				return nil, &errorModel.ProblemDetails, nil
+				return nil, errorModel.ProblemDetails, nil
 			case error:
 				return nil, openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:
@@ -117,14 +117,16 @@ func (s *npcfService) GetAppSession(appSessionId string) (
 		}
 	}
 
-	return &getAppSessionRsp.AppSessionContext, nil, nil
+	return getAppSessionRsp.Pcf_PolAuth_AppSessionContext, nil, nil
 }
 
-// PostAppSessions Creates a models.AppSessionContext in the NPCF_policyAuthorization service.
+// PostAppSessions Creates a models.Pcf_PolAuth_AppSessionContext in the NPCF_policyAuthorization service.
 // 3GPP TS 29.514 release 17 version 17.6.0
 // Resource structure: 5.3.1
 // Request/Response: 5.3.2.3.1
-func (s *npcfService) PostAppSessions(asc *models.AppSessionContext) (string, *models.ProblemDetails, error) {
+func (s *npcfService) PostAppSessions(
+	asc *models.Pcf_PolAuth_AppSessionContext,
+) (string, *models.ProblemDetails, error) {
 	uri, err := s.getPcfPolicyAuthUri()
 	if err != nil {
 		return "", nil, err
@@ -137,13 +139,13 @@ func (s *npcfService) PostAppSessions(asc *models.AppSessionContext) (string, *m
 	}
 
 	ctx, _, err := s.consumer.Context().GetTokenCtx(
-		models.ServiceName_NPCF_POLICYAUTHORIZATION, models.NrfNfManagementNfType_PCF)
+		models.Nrf_NFMgmt_ServiceName_NPCF_POLICYAUTHORIZATION, models.Nrf_NFMgmt_NFType_PCF)
 	if err != nil {
 		return "", nil, err
 	}
 
-	appSessionsRequest := PolicyAuthorization.PostAppSessionsRequest{
-		AppSessionContext: asc,
+	appSessionsRequest := PolAuth.PostAppSessionsRequest{
+		RequestBody: asc,
 	}
 
 	postAppSessionsRsp, errPostAppSessionRsp := client.ApplicationSessionsCollectionApi.
@@ -154,8 +156,8 @@ func (s *npcfService) PostAppSessions(asc *models.AppSessionContext) (string, *m
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case PolicyAuthorization.PostAppSessionsError:
-				return "", &errorModel.ProblemDetails, nil
+			case PolAuth.PostAppSessionsError:
+				return "", errorModel.ProblemDetails, nil
 			case error:
 				return "", openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:
@@ -179,15 +181,15 @@ func (s *npcfService) PostAppSessions(asc *models.AppSessionContext) (string, *m
 
 func (s *npcfService) PutAppSession(
 	appSessionId string,
-	ascUpdateData *models.AppSessionContextUpdateData,
-	asc *models.AppSessionContext,
+	ascUpdateData *models.Pcf_PolAuth_AppSessionContextUpdateData,
+	asc *models.Pcf_PolAuth_AppSessionContext,
 ) (int, interface{}, string) {
 	var (
 		err     error
 		rspCode int
 		rspBody interface{}
-		rsp     *PolicyAuthorization.GetAppSessionResponse
-		modRsp  *PolicyAuthorization.ModAppSessionResponse
+		rsp     *PolAuth.GetAppSessionResponse
+		modRsp  *PolAuth.ModAppSessionResponse
 	)
 
 	uri, err := s.getPcfPolicyAuthUri()
@@ -196,35 +198,35 @@ func (s *npcfService) PutAppSession(
 	}
 	client := s.getPolicyAuthClient(uri)
 
-	ctx, _, err := s.consumer.Context().GetTokenCtx(models.ServiceName_NPCF_POLICYAUTHORIZATION,
-		models.NrfNfManagementNfType_PCF)
+	ctx, _, err := s.consumer.Context().GetTokenCtx(models.Nrf_NFMgmt_ServiceName_NPCF_POLICYAUTHORIZATION,
+		models.Nrf_NFMgmt_NFType_PCF)
 	if err != nil {
 		return rspCode, rspBody, appSessionId
 	}
 
-	appSessReq := &PolicyAuthorization.GetAppSessionRequest{
+	appSessReq := &PolAuth.GetAppSessionRequest{
 		AppSessionId: &appSessionId,
 	}
 	rsp, err = client.IndividualApplicationSessionContextDocumentApi.
 		GetAppSession(ctx, appSessReq)
 
 	if rsp != nil {
-		appSessModReq := &PolicyAuthorization.ModAppSessionRequest{
+		appSessModReq := &PolAuth.ModAppSessionRequest{
 			AppSessionId: &appSessionId,
-			AppSessionContextUpdateDataPatch: &models.AppSessionContextUpdateDataPatch{
+			RequestBody: &models.Pcf_PolAuth_AppSessionContextUpdateDataPatch{
 				AscReqData: ascUpdateData,
 			},
 		}
 		modRsp, err = client.IndividualApplicationSessionContextDocumentApi.ModAppSession(ctx, appSessModReq)
 
 		if modRsp != nil {
-			if reflect.DeepEqual(modRsp.AppSessionContext, models.AppSessionContext{}) {
+			if reflect.DeepEqual(modRsp.Pcf_PolAuth_AppSessionContext, models.Pcf_PolAuth_AppSessionContext{}) {
 				rspCode = http.StatusNoContent
 				rspBody = nil
 			} else {
 				rspCode = http.StatusOK
-				rspBody = modRsp.AppSessionContext
-				logger.ConsumerLog.Debugf("PostAppSessions RspData: %+v", rsp.AppSessionContext)
+				rspBody = modRsp.Pcf_PolAuth_AppSessionContext
+				logger.ConsumerLog.Debugf("PostAppSessions RspData: %+v", rsp.Pcf_PolAuth_AppSessionContext)
 			}
 		} else {
 			rspCode, rspBody = handleAPIServiceNoResponse(err)
@@ -237,13 +239,13 @@ func (s *npcfService) PutAppSession(
 	return rspCode, rspBody, appSessionId
 }
 
-// PatchAppSession Updates a models.AppSessionContext and returns its representation.
+// PatchAppSession Updates a models.Pcf_PolAuth_AppSessionContext and returns its representation.
 // 3GPP TS 29.514 release 17 version 17.6.0
 // Resource structure: 5.3.1-1
 // Request/Response: 5.3.3.3.2
 func (s *npcfService) PatchAppSession(appSessionId string,
-	ascUpdateData *models.AppSessionContextUpdateData,
-) (*models.AppSessionContext, *models.ProblemDetails, error) {
+	ascUpdateData *models.Pcf_PolAuth_AppSessionContextUpdateData,
+) (*models.Pcf_PolAuth_AppSessionContext, *models.ProblemDetails, error) {
 	uri, err := s.getPcfPolicyAuthUri()
 	if err != nil {
 		return nil, nil, err
@@ -256,16 +258,16 @@ func (s *npcfService) PatchAppSession(appSessionId string,
 	}
 
 	ctx, _, err := s.consumer.Context().GetTokenCtx(
-		models.ServiceName_NPCF_POLICYAUTHORIZATION, models.NrfNfManagementNfType_PCF)
+		models.Nrf_NFMgmt_ServiceName_NPCF_POLICYAUTHORIZATION, models.Nrf_NFMgmt_NFType_PCF)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	appSessionCtxUpdateDataPatch := models.AppSessionContextUpdateDataPatch{AscReqData: ascUpdateData}
+	appSessionCtxUpdateDataPatch := models.Pcf_PolAuth_AppSessionContextUpdateDataPatch{AscReqData: ascUpdateData}
 
-	modAppSessionReq := PolicyAuthorization.ModAppSessionRequest{
-		AppSessionId:                     &appSessionId,
-		AppSessionContextUpdateDataPatch: &appSessionCtxUpdateDataPatch,
+	modAppSessionReq := PolAuth.ModAppSessionRequest{
+		AppSessionId: &appSessionId,
+		RequestBody:  &appSessionCtxUpdateDataPatch,
 	}
 
 	modAppSessionRsp, errModAppSessionRsp := client.IndividualApplicationSessionContextDocumentApi.ModAppSession(
@@ -276,9 +278,9 @@ func (s *npcfService) PatchAppSession(appSessionId string,
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case PolicyAuthorization.ModAppSessionError:
+			case PolAuth.ModAppSessionError:
 				// TODO: handle the 307/308 http status code
-				return nil, &errorModel.ProblemDetails, nil
+				return nil, errorModel.ProblemDetails, nil
 			case error:
 				return nil, openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:
@@ -291,9 +293,9 @@ func (s *npcfService) PatchAppSession(appSessionId string,
 		}
 	}
 
-	logger.ConsumerLog.Debugf("PatchAppSessions RspData: %+v", modAppSessionRsp.AppSessionContext)
+	logger.ConsumerLog.Debugf("PatchAppSessions RspData: %+v", modAppSessionRsp.Pcf_PolAuth_AppSessionContext)
 
-	return &modAppSessionRsp.AppSessionContext, nil, nil
+	return modAppSessionRsp.Pcf_PolAuth_AppSessionContext, nil, nil
 }
 
 // DeleteAppSession Sends out a deleteAppSession API request to the PCF and returns either a status code,
@@ -314,15 +316,15 @@ func (s *npcfService) DeleteAppSession(appSessionId string) (int, *models.Proble
 	}
 
 	ctx, _, err := s.consumer.Context().GetTokenCtx(
-		models.ServiceName_NPCF_POLICYAUTHORIZATION, models.NrfNfManagementNfType_PCF)
+		models.Nrf_NFMgmt_ServiceName_NPCF_POLICYAUTHORIZATION, models.Nrf_NFMgmt_NFType_PCF)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	deleteAppSessionReq := PolicyAuthorization.DeleteAppSessionRequest{
+	deleteAppSessionReq := PolAuth.DeleteAppSessionRequest{
 		AppSessionId: &appSessionId,
 		// Parameter is optional, to change when the PCF will handle it.
-		PcfPolicyAuthorizationEventsSubscReqData: nil,
+		RequestBody: nil,
 	}
 
 	// Here the response do not have any interest as we do not return
@@ -335,9 +337,9 @@ func (s *npcfService) DeleteAppSession(appSessionId string) (int, *models.Proble
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case PolicyAuthorization.DeleteAppSessionError:
+			case PolAuth.DeleteAppSessionError:
 				// TODO: handle the 307/308 http status code
-				problemDetails = &errorModel.ProblemDetails
+				problemDetails = errorModel.ProblemDetails
 				return int(problemDetails.Status), problemDetails, nil
 			case error:
 				problemDetails = openapi.ProblemDetailsSystemFailure(errorModel.Error())

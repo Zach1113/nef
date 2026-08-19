@@ -13,13 +13,13 @@ func TestFlushNotifications_UnreachableNotifyURI_DoesNotPanic(t *testing.T) {
 		t.Fatalf("create notifier failed: %v", err)
 	}
 
-	notifier.AddPfdSub(&models.PfdSubscription{
+	notifier.AddPfdSub(&models.Nef_PFDMgmt_PfdSubscription{
 		ApplicationIds: []string{"app-nef-dos"},
 		NotifyUri:      "http://127.0.0.1:1/notify",
 	})
 
 	notifyCtx := notifier.NewPfdNotifyContext()
-	notifyCtx.AddNotification("app-nef-dos", &models.PfdChangeNotification{
+	notifyCtx.AddNotification("app-nef-dos", &models.Nef_PFDMgmt_PfdChangeNotification{
 		ApplicationId: "app-nef-dos",
 	})
 

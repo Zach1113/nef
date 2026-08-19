@@ -7,14 +7,14 @@ import (
 
 type AfSubscription struct {
 	SubID        string
-	TiSub        *models.NefTrafficInfluSub
+	TiSub        *models.Nef_TrafInfl_TrafficInfluSub
 	AppSessID    string // use in single UE case
 	InfluID      string // use in multiple UE case
 	NotifCorreID string
 	Log          *logrus.Entry
 }
 
-func (s *AfSubscription) PatchTiSubData(tiSubPatch *models.NefTrafficInfluSubPatch) {
+func (s *AfSubscription) PatchTiSubData(tiSubPatch *models.Nef_TrafInfl_TrafficInfluSubPatch) {
 	s.TiSub.AppReloInd = tiSubPatch.AppReloInd
 	s.TiSub.TrafficFilters = tiSubPatch.TrafficFilters
 	s.TiSub.EthTrafficFilters = tiSubPatch.EthTrafficFilters

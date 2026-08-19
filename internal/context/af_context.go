@@ -20,7 +20,7 @@ type AfData struct {
 	Log        *logrus.Entry
 }
 
-func (a *AfData) NewSub(numCorreID uint64, tiSub *models.NefTrafficInfluSub) *AfSubscription {
+func (a *AfData) NewSub(numCorreID uint64, tiSub *models.Nef_TrafInfl_TrafficInfluSub) *AfSubscription {
 	a.NumSubscID++
 	sub := AfSubscription{
 		NotifCorreID: strconv.FormatUint(numCorreID, 10),

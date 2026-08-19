@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/free5gc/openapi"
 	"github.com/free5gc/openapi/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -14,6 +15,7 @@ import (
 )
 
 func TestGetApplicationsPFD(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrGetPfdDatasStub()
 	defer gock.Off()
 
@@ -27,7 +29,7 @@ func TestGetApplicationsPFD(t *testing.T) {
 			appIDs:      []string{"app1", "app2"},
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusOK,
-				Body:   &[]models.PfdDataForApp{pfdDataForApp1, pfdDataForApp2},
+				Body:   &[]models.Nef_PFDMgmt_PfdDataForApp{pfdDataForApp1, pfdDataForApp2},
 			},
 		},
 		{
@@ -54,6 +56,7 @@ func TestGetApplicationsPFD(t *testing.T) {
 }
 
 func TestGetApplicationsPFDWithMalformedMultipartFromUDR(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrGetPfdDatasMultipartStub()
 	defer gock.Off()
 
@@ -67,6 +70,7 @@ func TestGetApplicationsPFDWithMalformedMultipartFromUDR(t *testing.T) {
 }
 
 func TestGetIndividualApplicationPFD(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	initUDRDrGetPfdDataStub()
 	defer gock.Off()
 
@@ -107,14 +111,15 @@ func TestGetIndividualApplicationPFD(t *testing.T) {
 }
 
 func TestPostPFDSubscriptions(t *testing.T) {
-	pfdSubsc := &models.PfdSubscription{
+	openapi.InterceptInnerHttp2Client(t, false)
+	pfdSubsc := &models.Nef_PFDMgmt_PfdSubscription{
 		ApplicationIds: []string{"app1", "app2"},
 		NotifyUri:      "http://pfdSub1URI/notify",
 	}
 
 	testCases := []struct {
 		description      string
-		subscription     *models.PfdSubscription
+		subscription     *models.Nef_PFDMgmt_PfdSubscription
 		expectedResponse *HandlerResponse
 	}{
 		{
@@ -144,6 +149,7 @@ func TestPostPFDSubscriptions(t *testing.T) {
 }
 
 func TestDeleteIndividualPFDSubscription(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	testCases := []struct {
 		description      string
 		subscriptionID   string
@@ -175,7 +181,7 @@ func TestDeleteIndividualPFDSubscription(t *testing.T) {
 var (
 	// `notifChan` are used in `TestPostPfdChangeReports()` to pass the notification requests intercepted by gock.
 	notifChan   = make(chan *http.Request)
-	pfdContent1 = models.PfdContent{
+	pfdContent1 = models.Nef_PFDMgmt_PfdContent{
 		PfdId: "pfd1",
 		FlowDescriptions: []string{
 			"permit in ip from 10.68.28.39 80 to any",
@@ -185,6 +191,7 @@ var (
 )
 
 func TestPostPfdChangeReports(t *testing.T) {
+	openapi.InterceptInnerHttp2Client(t, false)
 	// Note: Because TestPostPFDSubscriptions() already used subscription ID 1, the ID will start from 2 here.
 	initUDRDrPutPfdDataStub(http.StatusOK)
 	initUDRDrDeletePfdDataStub()
@@ -208,11 +215,11 @@ func TestPostPfdChangeReports(t *testing.T) {
 	afPfdTr.AddExtAppID("app2")
 	af.Mu.Unlock()
 
-	subsID1 := nefApp.Notifier().PfdChangeNotifier.AddPfdSub(&models.PfdSubscription{
+	subsID1 := nefApp.Notifier().PfdChangeNotifier.AddPfdSub(&models.Nef_PFDMgmt_PfdSubscription{
 		ApplicationIds: []string{"app1"},
 		NotifyUri:      "http://pfdSub2URI/notify",
 	})
-	subsID2 := nefApp.Notifier().PfdChangeNotifier.AddPfdSub(&models.PfdSubscription{
+	subsID2 := nefApp.Notifier().PfdChangeNotifier.AddPfdSub(&models.Nef_PFDMgmt_PfdSubscription{
 		ApplicationIds: []string{"app1", "app2"},
 		NotifyUri:      "http://pfdSub3URI/notify",
 	})
@@ -228,23 +235,23 @@ func TestPostPfdChangeReports(t *testing.T) {
 	testCases := []struct {
 		description           string
 		triggerFunc           func(c *gin.Context)
-		expectedNotifications map[string][]models.PfdChangeNotification
+		expectedNotifications map[string][]models.Nef_PFDMgmt_PfdChangeNotification
 	}{
 		{
 			description: "Update app1, should send notification for subscription 2 and 3",
 			triggerFunc: func(c *gin.Context) {
-				nefApp.Processor().PutIndividualApplicationPFDManagement(c, "af1", "1", "app1", &models.PfdData{
+				nefApp.Processor().PutIndividualApplicationPFDManagement(c, "af1", "1", "app1", &models.Nef_T8PFDMgmt_PfdData{
 					ExternalAppId: "app1",
-					Pfds: map[string]models.Pfd{
+					Pfds: map[string]models.Nef_T8PFDMgmt_Pfd{
 						"pfd1": pfd1,
 					},
 				})
 			},
-			expectedNotifications: map[string][]models.PfdChangeNotification{
+			expectedNotifications: map[string][]models.Nef_PFDMgmt_PfdChangeNotification{
 				"http://pfdSub2URI/notify": {
 					{
 						ApplicationId: "app1",
-						Pfds: []models.PfdContent{
+						Pfds: []models.Nef_PFDMgmt_PfdContent{
 							pfdContent1,
 						},
 					},
@@ -252,7 +259,7 @@ func TestPostPfdChangeReports(t *testing.T) {
 				"http://pfdSub3URI/notify": {
 					{
 						ApplicationId: "app1",
-						Pfds: []models.PfdContent{
+						Pfds: []models.Nef_PFDMgmt_PfdContent{
 							pfdContent1,
 						},
 					},
@@ -264,7 +271,7 @@ func TestPostPfdChangeReports(t *testing.T) {
 			triggerFunc: func(c *gin.Context) {
 				nefApp.Processor().DeleteIndividualApplicationPFDManagement(c, "af1", "1", "app2")
 			},
-			expectedNotifications: map[string][]models.PfdChangeNotification{
+			expectedNotifications: map[string][]models.Nef_PFDMgmt_PfdChangeNotification{
 				"http://pfdSub3URI/notify": {
 					{
 						ApplicationId: "app2",
@@ -284,7 +291,7 @@ func TestPostPfdChangeReports(t *testing.T) {
 			for i := 0; i < len(tc.expectedNotifications); i++ {
 				r := <-notifChan
 
-				var getNotifications []models.PfdChangeNotification
+				var getNotifications []models.Nef_PFDMgmt_PfdChangeNotification
 				if err := json.NewDecoder(r.Body).Decode(&getNotifications); err != nil {
 					t.Fatal(err)
 				}

@@ -37,7 +37,7 @@ func (p *Processor) GetApplicationsPFD(c *gin.Context, appIDs []string) {
 		return
 	}
 
-	var pfdDataForApp []models.PfdDataForApp
+	var pfdDataForApp []models.Nef_PFDMgmt_PfdDataForApp
 
 	for _, dataForExt := range pdfDataForAppExt {
 		pfdDataForApp = append(pfdDataForApp, *convertPdfDataForAppExtToPfdDataForApp(&dataForExt))
@@ -62,7 +62,7 @@ func (p *Processor) GetIndividualApplicationPFD(c *gin.Context, appID string) {
 		c.JSON(int(pdfDataProblemDetails.Status), pdfDataProblemDetails)
 		return
 	case errPdfData != nil:
-		problemDetails := models.ProblemDetails{
+		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
 			Detail: "Query to UDR failed",
 		}
@@ -71,7 +71,7 @@ func (p *Processor) GetIndividualApplicationPFD(c *gin.Context, appID string) {
 		return
 	}
 
-	pdfDataForApp := convertPdfDataForAppExtToPfdDataForApp(&pdfDataRsp.PfdDataForAppExt)
+	pdfDataForApp := convertPdfDataForAppExtToPfdDataForApp(pdfDataRsp.Udr_DR_PfdDataForAppExt)
 
 	c.JSON(http.StatusOK, pdfDataForApp)
 }
@@ -80,7 +80,7 @@ func (p *Processor) GetIndividualApplicationPFD(c *gin.Context, appID string) {
 // 3GPP TS 29.551 release 17 version 17.6.0
 // Resource structure: 5.3.1
 // Request/Response  : 5.3.4.3.1
-func (p *Processor) PostPFDSubscriptions(c *gin.Context, pfdSubsc *models.PfdSubscription) {
+func (p *Processor) PostPFDSubscriptions(c *gin.Context, pfdSubsc *models.Nef_PFDMgmt_PfdSubscription) {
 	logger.PFDFLog.Infof("PostPFDSubscriptions - appIDs: %v", pfdSubsc.ApplicationIds)
 
 	// TODO: Support SupportedFeatures

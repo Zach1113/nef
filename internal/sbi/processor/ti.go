@@ -1,7 +1,6 @@
 package processor
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -35,7 +34,7 @@ func (p *Processor) GetTrafficInfluenceSubscription(
 	af.Mu.RLock()
 	defer af.Mu.RUnlock()
 
-	var tiSubs []models.NefTrafficInfluSub
+	var tiSubs []models.Nef_TrafInfl_TrafficInfluSub
 	for _, sub := range af.Subs {
 		if sub.TiSub == nil {
 			continue
@@ -52,7 +51,7 @@ func (p *Processor) GetTrafficInfluenceSubscription(
 func (p *Processor) PostTrafficInfluenceSubscription(
 	c *gin.Context,
 	afID string,
-	tiSub *models.NefTrafficInfluSub,
+	tiSub *models.Nef_TrafInfl_TrafficInfluSub,
 ) {
 	logger.TrafInfluLog.Infof("PostTrafficInfluenceSubscription - afID[%s]", afID)
 
@@ -194,7 +193,7 @@ func (p *Processor) GetIndividualTrafficInfluenceSubscription(
 func (p *Processor) PutIndividualTrafficInfluenceSubscription(
 	c *gin.Context,
 	afID, subID string,
-	tiSub *models.NefTrafficInfluSub,
+	tiSub *models.Nef_TrafInfl_TrafficInfluSub,
 ) {
 	logger.TrafInfluLog.Infof("PutIndividualTrafficInfluenceSubscription - afID[%s], subID[%s]", afID, subID)
 
@@ -281,7 +280,7 @@ func (p *Processor) PutIndividualTrafficInfluenceSubscription(
 func (p *Processor) PatchIndividualTrafficInfluenceSubscription(
 	c *gin.Context,
 	afID, subID string,
-	tiSubPatch *models.NefTrafficInfluSubPatch,
+	tiSubPatch *models.Nef_TrafInfl_TrafficInfluSubPatch,
 ) {
 	logger.TrafInfluLog.Infof("PatchIndividualTrafficInfluenceSubscription - afID[%s], subID[%s]", afID, subID)
 
@@ -416,7 +415,7 @@ func (p *Processor) DeleteIndividualTrafficInfluenceSubscription(
 }
 
 func validateTrafficInfluenceData(
-	tiSub *models.NefTrafficInfluSub,
+	tiSub *models.Nef_TrafInfl_TrafficInfluSub,
 ) *models.ProblemDetails {
 	if tiSub.NotificationDestination == "" {
 		pd := openapi.ProblemDetailsMalformedReqSyntax("Missing notificationDestination")
@@ -461,14 +460,8 @@ func validateTrafficInfluenceData(
 		return pd
 	}
 
-	for i, route := range tiSub.TrafficRoutes {
-		if route == nil {
-			pd := openapi.
-				ProblemDetailsMalformedReqSyntax(
-					fmt.Sprintf("Illegal null route element at index %d", i))
-			return pd
-		}
-	}
+	// TrafficRoutes is a value slice in the new openapi models, so its
+	// elements can no longer be nil; the per-element nil check is gone.
 	return nil
 }
 
@@ -484,13 +477,13 @@ func (p *Processor) genNotificationUri() string {
 }
 
 func (p *Processor) convertTrafficInfluSubToAppSessionContext(
-	tiSub *models.NefTrafficInfluSub,
+	tiSub *models.Nef_TrafInfl_TrafficInfluSub,
 	notifCorreID string,
-) *models.AppSessionContext {
-	asc := &models.AppSessionContext{
-		AscReqData: &models.AppSessionContextReqData{
+) *models.Pcf_PolAuth_AppSessionContext {
+	asc := &models.Pcf_PolAuth_AppSessionContext{
+		AscReqData: &models.Pcf_PolAuth_AppSessionContextReqData{
 			AfAppId: tiSub.AfAppId,
-			AfRoutReq: &models.AfRoutingRequirement{
+			AfRoutReq: &models.Pcf_PolAuth_AfRoutingRequirement{
 				AppReloc:    tiSub.AppReloInd,
 				RouteToLocs: tiSub.TrafficRoutes,
 				TempVals:    tiSub.TempValidities,
@@ -507,7 +500,7 @@ func (p *Processor) convertTrafficInfluSubToAppSessionContext(
 	}
 
 	if tiSub.DnaiChgType != "" {
-		asc.AscReqData.AfRoutReq.UpPathChgSub = &models.UpPathChgEvent{
+		asc.AscReqData.AfRoutReq.UpPathChgSub = &models.Pcf_SMPolCtrl_UpPathChgEvent{
 			DnaiChgType:     tiSub.DnaiChgType,
 			NotificationUri: p.genNotificationUri(),
 			NotifCorreId:    notifCorreID,
@@ -517,10 +510,10 @@ func (p *Processor) convertTrafficInfluSubToAppSessionContext(
 }
 
 func (p *Processor) convertTrafficInfluSubPatchToAppSessionContextUpdateData(
-	tiSubPatch *models.NefTrafficInfluSubPatch,
-) *models.AppSessionContextUpdateData {
-	ascUpdate := &models.AppSessionContextUpdateData{
-		AfRoutReq: &models.AfRoutingRequirementRm{
+	tiSubPatch *models.Nef_TrafInfl_TrafficInfluSubPatch,
+) *models.Pcf_PolAuth_AppSessionContextUpdateData {
+	ascUpdate := &models.Pcf_PolAuth_AppSessionContextUpdateData{
+		AfRoutReq: &models.Pcf_PolAuth_AfRoutingRequirementRm{
 			AppReloc:    tiSubPatch.AppReloInd,
 			RouteToLocs: tiSubPatch.TrafficRoutes,
 			TempVals:    tiSubPatch.TempValidities,
@@ -530,10 +523,10 @@ func (p *Processor) convertTrafficInfluSubPatchToAppSessionContextUpdateData(
 }
 
 func (p *Processor) convertTrafficInfluSubToTrafficInfluData(
-	tiSub *models.NefTrafficInfluSub,
+	tiSub *models.Nef_TrafInfl_TrafficInfluSub,
 	notifCorreID string,
-) *models.TrafficInfluData {
-	tiData := &models.TrafficInfluData{
+) *models.Udr_DR_TrafficInfluData {
+	tiData := &models.Udr_DR_TrafficInfluData{
 		AfAppId:    tiSub.AfAppId,
 		AppReloInd: tiSub.AppReloInd,
 		// Supi: ,
@@ -563,9 +556,9 @@ func (p *Processor) convertTrafficInfluSubToTrafficInfluData(
 }
 
 func (p *Processor) convertTrafficInfluSubPatchToTrafficInfluDataPatch(
-	tiSubPatch *models.NefTrafficInfluSubPatch,
-) *models.TrafficInfluDataPatch {
-	tiDataPatch := &models.TrafficInfluDataPatch{
+	tiSubPatch *models.Nef_TrafInfl_TrafficInfluSubPatch,
+) *models.Udr_DR_TrafficInfluDataPatch {
+	tiDataPatch := &models.Udr_DR_TrafficInfluDataPatch{
 		AppReloInd:        tiSubPatch.AppReloInd,
 		EthTrafficFilters: tiSubPatch.EthTrafficFilters,
 		TrafficFilters:    tiSubPatch.TrafficFilters,

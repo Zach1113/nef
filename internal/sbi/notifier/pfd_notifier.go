@@ -11,12 +11,12 @@ import (
 	"github.com/free5gc/nef/internal/logger"
 	// "github.com/free5gc/openapi/Nnef_PFDmanagement"
 	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/openapi/nef/PFDmanagement"
+	"github.com/free5gc/openapi/nef/PFDMgmt"
 	sbi_metrics "github.com/free5gc/util/metrics/sbi"
 )
 
 type PfdChangeNotifier struct {
-	clientPfdManagement *PFDmanagement.APIClient
+	clientPfdManagement *PFDMgmt.APIClient
 	mu                  sync.RWMutex
 
 	numPfdSubID   uint64
@@ -26,7 +26,7 @@ type PfdChangeNotifier struct {
 
 type PfdNotifyContext struct {
 	notifier             *PfdChangeNotifier
-	appIdToNotification  map[string]models.PfdChangeNotification
+	appIdToNotification  map[string]models.Nef_PFDMgmt_PfdChangeNotification
 	subIdToChangedAppIDs map[string][]string
 }
 
@@ -45,13 +45,13 @@ func (n *PfdChangeNotifier) initPfdManagementApiClient() {
 		return
 	}
 
-	config := PFDmanagement.NewConfiguration()
+	config := PFDMgmt.NewConfiguration()
 	config.SetMetrics(sbi_metrics.SbiMetricHook)
 	config.SetHTTPClient(http.DefaultClient)
-	n.clientPfdManagement = PFDmanagement.NewAPIClient(config)
+	n.clientPfdManagement = PFDMgmt.NewAPIClient(config)
 }
 
-func (n *PfdChangeNotifier) AddPfdSub(pfdSub *models.PfdSubscription) string {
+func (n *PfdChangeNotifier) AddPfdSub(pfdSub *models.Nef_PFDMgmt_PfdSubscription) string {
 	n.initPfdManagementApiClient()
 
 	n.mu.Lock()
@@ -105,12 +105,12 @@ func (n *PfdChangeNotifier) getSubURI(subID string) string {
 func (n *PfdChangeNotifier) NewPfdNotifyContext() *PfdNotifyContext {
 	return &PfdNotifyContext{
 		notifier:             n,
-		appIdToNotification:  make(map[string]models.PfdChangeNotification),
+		appIdToNotification:  make(map[string]models.Nef_PFDMgmt_PfdChangeNotification),
 		subIdToChangedAppIDs: make(map[string][]string),
 	}
 }
 
-func (nc *PfdNotifyContext) AddNotification(appID string, notif *models.PfdChangeNotification) {
+func (nc *PfdNotifyContext) AddNotification(appID string, notif *models.Nef_PFDMgmt_PfdChangeNotification) {
 	nc.appIdToNotification[appID] = *notif
 	for _, subID := range nc.notifier.getSubIDs(appID) {
 		nc.subIdToChangedAppIDs[subID] = append(nc.subIdToChangedAppIDs[subID], appID)
@@ -119,13 +119,13 @@ func (nc *PfdNotifyContext) AddNotification(appID string, notif *models.PfdChang
 
 func (nc *PfdNotifyContext) FlushNotifications() {
 	for subID, appIDs := range nc.subIdToChangedAppIDs {
-		pfdChangeNotifications := make([]models.PfdChangeNotification, 0, len(appIDs))
+		pfdChangeNotifications := make([]models.Nef_PFDMgmt_PfdChangeNotification, 0, len(appIDs))
 		for _, appID := range appIDs {
 			pfdChangeNotifications = append(pfdChangeNotifications, nc.appIdToNotification[appID])
 		}
 
-		notifyReq := &PFDmanagement.NnefPFDmanagementNotifyRequest{
-			PfdChangeNotification: pfdChangeNotifications,
+		notifyReq := &PFDMgmt.NnefPFDmanagementNotifyRequest{
+			RequestBody: pfdChangeNotifications,
 		}
 
 		go nc.notifier.sendPFDChangeNotification(subID, notifyReq)
@@ -135,7 +135,7 @@ func (nc *PfdNotifyContext) FlushNotifications() {
 
 func (n *PfdChangeNotifier) sendPFDChangeNotification(
 	subID string,
-	notifyReq *PFDmanagement.NnefPFDmanagementNotifyRequest,
+	notifyReq *PFDMgmt.NnefPFDmanagementNotifyRequest,
 ) {
 	defer func() {
 		if p := recover(); p != nil {
