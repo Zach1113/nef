@@ -22,7 +22,7 @@ import (
 const (
 	ServiceTraffInflu  string = "3gpp-traffic-influence"
 	ServicePfdMng      string = "3gpp-pfd-management"
-	ServiceNefPfd      string = string(models.ServiceName_NNEF_PFDMANAGEMENT)
+	ServiceNefPfd      string = string(models.Nrf_NFMgmt_ServiceName_NNEF_PFDMANAGEMENT)
 	ServiceNefOam      string = "nnef-oam"
 	ServiceNefCallback string = "nnef-callback"
 )
@@ -539,27 +539,27 @@ func (c *Config) GetCertKeyPath() string {
 	return NefDefaultPrivateKeyPath
 }
 
-func (c *Config) NFServices() []models.NrfNfManagementNfService {
+func (c *Config) NFServices() []models.Nrf_NFMgmt_NFService {
 	versions := strings.Split(c.Version(), ".")
 	majorVersionUri := "v" + versions[0]
-	var nfServices []models.NrfNfManagementNfService
+	var nfServices []models.Nrf_NFMgmt_NFService
 	for i, s := range c.ServiceList() {
-		nfService := models.NrfNfManagementNfService{
+		nfService := models.Nrf_NFMgmt_NFService{
 			ServiceInstanceId: strconv.Itoa(i),
-			ServiceName:       models.ServiceName(s.ServiceName),
-			Versions: []models.NfServiceVersion{
+			ServiceName:       models.Nrf_NFMgmt_ServiceName(s.ServiceName),
+			Versions: []models.Nrf_NFMgmt_NFServiceVersion{
 				{
 					ApiFullVersion:  c.Version(),
 					ApiVersionInUri: majorVersionUri,
 				},
 			},
 			Scheme:          models.UriScheme(c.SbiScheme()),
-			NfServiceStatus: models.NfServiceStatus_REGISTERED,
+			NfServiceStatus: models.Nrf_NFMgmt_NFServiceStatus_REGISTERED,
 			ApiPrefix:       c.SbiUri(),
-			IpEndPoints: []models.IpEndPoint{
+			IpEndPoints: []models.Nrf_NFMgmt_IpEndPoint{
 				{
 					Ipv4Address: c.SbiRegisterIP(),
-					Transport:   models.NrfNfManagementTransportProtocol_TCP,
+					Transport:   models.Nrf_NFMgmt_TransportProtocol_TCP,
 					Port:        int32(c.SbiPort()),
 				},
 			},

@@ -4,10 +4,10 @@ import (
 	"github.com/free5gc/nef/internal/logger"
 	"github.com/free5gc/nef/pkg/app"
 	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/nrf/NFDiscovery"
-	"github.com/free5gc/openapi/nrf/NFManagement"
-	"github.com/free5gc/openapi/pcf/PolicyAuthorization"
-	"github.com/free5gc/openapi/udr/DataRepository"
+	"github.com/free5gc/openapi/nrf/NFDisc"
+	"github.com/free5gc/openapi/nrf/NFMgmt"
+	"github.com/free5gc/openapi/pcf/PolAuth"
+	"github.com/free5gc/openapi/udr/DR"
 )
 
 type nef interface {
@@ -30,18 +30,18 @@ func NewConsumer(nef nef) (*Consumer, error) {
 
 	c.nnrfService = &nnrfService{
 		consumer:        c,
-		nfDiscClients:   make(map[string]*NFDiscovery.APIClient),
-		nfMngmntClients: make(map[string]*NFManagement.APIClient),
+		nfDiscClients:   make(map[string]*NFDisc.APIClient),
+		nfMngmntClients: make(map[string]*NFMgmt.APIClient),
 	}
 
 	c.npcfService = &npcfService{
 		consumer: c,
-		clients:  make(map[string]*PolicyAuthorization.APIClient),
+		clients:  make(map[string]*PolAuth.APIClient),
 	}
 
 	c.nudrService = &nudrService{
 		consumer: c,
-		clients:  make(map[string]*DataRepository.APIClient),
+		clients:  make(map[string]*DR.APIClient),
 	}
 	return c, nil
 }

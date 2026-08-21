@@ -7,8 +7,8 @@ import (
 
 	"github.com/free5gc/openapi"
 	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/openapi/nrf/NFDiscovery"
-	"github.com/free5gc/openapi/udr/DataRepository"
+	"github.com/free5gc/openapi/nrf/NFDisc"
+	"github.com/free5gc/openapi/udr/DR"
 	sbi_metrics "github.com/free5gc/util/metrics/sbi"
 )
 
@@ -16,10 +16,10 @@ type nudrService struct {
 	consumer *Consumer
 
 	mu      sync.RWMutex
-	clients map[string]*DataRepository.APIClient
+	clients map[string]*DR.APIClient
 }
 
-func (s *nudrService) getDataRepositoryClient(uri string) *DataRepository.APIClient {
+func (s *nudrService) getDataRepositoryClient(uri string) *DR.APIClient {
 	if uri == "" {
 		return nil
 	}
@@ -33,11 +33,11 @@ func (s *nudrService) getDataRepositoryClient(uri string) *DataRepository.APICli
 		return client
 	}
 
-	configuration := DataRepository.NewConfiguration()
+	configuration := DR.NewConfiguration()
 	configuration.SetBasePath(uri)
 	configuration.SetMetrics(sbi_metrics.SbiMetricHook)
 	configuration.SetHTTPClient(http.DefaultClient)
-	client = DataRepository.NewAPIClient(configuration)
+	client = DR.NewAPIClient(configuration)
 
 	s.mu.RUnlock()
 	s.mu.Lock()
@@ -49,13 +49,14 @@ func (s *nudrService) getDataRepositoryClient(uri string) *DataRepository.APICli
 func (s *nudrService) getUdrDrUri() (string, error) {
 	uri := s.consumer.Context().UdrDrUri()
 	if uri == "" {
-		localVarOptionals := NFDiscovery.SearchNFInstancesRequest{
-			ServiceNames: []models.ServiceName{
-				models.ServiceName_NUDR_DR,
+		localVarOptionals := NFDisc.SearchNFInstancesRequest{
+			ServiceNames: []models.Nrf_NFMgmt_ServiceName{
+				models.Nrf_NFMgmt_ServiceName_NUDR_DR,
 			},
 		}
 		_, sUri, err := s.consumer.SearchNFInstances(s.consumer.Config().NrfUri(),
-			models.ServiceName_NUDR_DR, models.NrfNfManagementNfType_UDR, models.NrfNfManagementNfType_NEF, &localVarOptionals)
+			models.Nrf_NFMgmt_ServiceName_NUDR_DR, models.Nrf_NFMgmt_NFType_UDR,
+			models.Nrf_NFMgmt_NFType_NEF, &localVarOptionals)
 		if err == nil {
 			s.consumer.Context().SetUdrDrUri(sUri)
 		}
@@ -64,13 +65,13 @@ func (s *nudrService) getUdrDrUri() (string, error) {
 	return uri, nil
 }
 
-// AppDataInfluenceDataGet Query the UDR to retrieve models.TrafficInfluData for each matching combination
+// AppDataInfluenceDataGet Query the UDR to retrieve models.Udr_DR_TrafficInfluData for each matching combination
 // of the values of the elements of the array given in parameters.
 // 3GPP TS 29.519 release 17 version 17.6.0
 // Resource structure: 6.2.2
 // Request/Response: 6.2.5.3.1
 func (s *nudrService) AppDataInfluenceDataGet(influenceIDs []string) (
-	[]models.TrafficInfluData, *models.ProblemDetails, error,
+	[]models.Udr_DR_TrafficInfluData, *models.ProblemDetails, error,
 ) {
 	uri, err := s.getUdrDrUri()
 	if err != nil {
@@ -83,11 +84,11 @@ func (s *nudrService) AppDataInfluenceDataGet(influenceIDs []string) (
 		return nil, nil, fmt.Errorf("could not initialize the DataRepository client")
 	}
 
-	param := DataRepository.ReadInfluenceDataRequest{
+	param := DR.ReadInfluenceDataRequest{
 		InfluenceIds: influenceIDs,
 	}
 
-	ctx, _, err := s.consumer.Context().GetTokenCtx(models.ServiceName_NUDR_DR, models.NrfNfManagementNfType_UDR)
+	ctx, _, err := s.consumer.Context().GetTokenCtx(models.Nrf_NFMgmt_ServiceName_NUDR_DR, models.Nrf_NFMgmt_NFType_UDR)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -99,8 +100,8 @@ func (s *nudrService) AppDataInfluenceDataGet(influenceIDs []string) (
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case DataRepository.ReadInfluenceDataError:
-				return nil, &errorModel.ProblemDetails, nil
+			case DR.ReadInfluenceDataError:
+				return nil, errorModel.ProblemDetails, nil
 			case error:
 				return nil, openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:
@@ -113,16 +114,16 @@ func (s *nudrService) AppDataInfluenceDataGet(influenceIDs []string) (
 		}
 	}
 
-	return influenceDataRsp.TrafficInfluData, nil, nil
+	return influenceDataRsp.Udr_DR_TrafficInfluData, nil, nil
 }
 
-// AppDataInfluenceDataPut Stores the models.TrafficInfluData for the related influenceID.
+// AppDataInfluenceDataPut Stores the models.Udr_DR_TrafficInfluData for the related influenceID.
 // 3GPP TS 29.519 release 17 version 17.6.0
 // Resource structure: 6.2.2
 // Request/Response: 6.2.6.3.1
 func (s *nudrService) AppDataInfluenceDataPut(influenceID string,
-	tiData *models.TrafficInfluData,
-) (*models.TrafficInfluData, *models.ProblemDetails, error) {
+	tiData *models.Udr_DR_TrafficInfluData,
+) (*models.Udr_DR_TrafficInfluData, *models.ProblemDetails, error) {
 	uri, err := s.getUdrDrUri()
 	if err != nil {
 		return nil, nil, err
@@ -134,14 +135,14 @@ func (s *nudrService) AppDataInfluenceDataPut(influenceID string,
 		return nil, nil, openapi.ReportError("could not initialize the DataRepository client")
 	}
 
-	ctx, _, err := s.consumer.Context().GetTokenCtx(models.ServiceName_NUDR_DR, models.NrfNfManagementNfType_UDR)
+	ctx, _, err := s.consumer.Context().GetTokenCtx(models.Nrf_NFMgmt_ServiceName_NUDR_DR, models.Nrf_NFMgmt_NFType_UDR)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	influenceDataReq := DataRepository.CreateOrReplaceIndividualInfluenceDataRequest{
-		InfluenceId:      &influenceID,
-		TrafficInfluData: tiData,
+	influenceDataReq := DR.CreateOrReplaceIndividualInfluenceDataRequest{
+		InfluenceId: &influenceID,
+		RequestBody: tiData,
 	}
 
 	influenceDataResp, errInfluenceData := client.IndividualInfluenceDataDocumentApi.
@@ -152,9 +153,9 @@ func (s *nudrService) AppDataInfluenceDataPut(influenceID string,
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case DataRepository.CreateOrReplaceIndividualInfluenceDataError:
+			case DR.CreateOrReplaceIndividualInfluenceDataError:
 
-				return nil, &errorModel.ProblemDetails, nil
+				return nil, errorModel.ProblemDetails, nil
 			case error:
 				return nil, openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:
@@ -167,14 +168,16 @@ func (s *nudrService) AppDataInfluenceDataPut(influenceID string,
 		}
 	}
 
-	return &influenceDataResp.TrafficInfluData, nil, nil
+	return influenceDataResp.Udr_DR_TrafficInfluData, nil, nil
 }
 
 // AppDataPfdsGet Retrieve PFDs for related application identifier(s).
 // 3GPP TS 29.519 release 17 version 17.6.0
 // Resource structure: 6.2.2
 // Request/Response: 6.2.3.3.1
-func (s *nudrService) AppDataPfdsGet(appIDs []string) ([]models.PfdDataForAppExt, *models.ProblemDetails, error) {
+func (s *nudrService) AppDataPfdsGet(
+	appIDs []string,
+) ([]models.Udr_DR_PfdDataForAppExt, *models.ProblemDetails, error) {
 	uri, err := s.getUdrDrUri()
 	if err != nil {
 		return nil, nil, err
@@ -186,16 +189,16 @@ func (s *nudrService) AppDataPfdsGet(appIDs []string) ([]models.PfdDataForAppExt
 		return nil, nil, openapi.ReportError("could not initialize the DataRepository client")
 	}
 
-	ctx, _, err := s.consumer.Context().GetTokenCtx(models.ServiceName_NUDR_DR, models.NrfNfManagementNfType_UDR)
+	ctx, _, err := s.consumer.Context().GetTokenCtx(models.Nrf_NFMgmt_ServiceName_NUDR_DR, models.Nrf_NFMgmt_NFType_UDR)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	pfdDataReq := DataRepository.ReadPFDDataRequest{
+	pfdDataReq := DR.ReadPFDDataRequest{
 		AppId: appIDs,
 	}
 
-	var pfdDataResp *DataRepository.ReadPFDDataResponse
+	var pfdDataResp *DR.ReadPFDDataResponse
 	var errPfdData error
 	func() {
 		defer func() {
@@ -212,8 +215,8 @@ func (s *nudrService) AppDataPfdsGet(appIDs []string) ([]models.PfdDataForAppExt
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case DataRepository.ReadPFDDataError:
-				return nil, &errorModel.ProblemDetails, nil
+			case DR.ReadPFDDataError:
+				return nil, errorModel.ProblemDetails, nil
 			case error:
 				return nil, openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:
@@ -230,15 +233,15 @@ func (s *nudrService) AppDataPfdsGet(appIDs []string) ([]models.PfdDataForAppExt
 		return nil, openapi.ProblemDetailsSystemFailure("server no response"), nil
 	}
 
-	return pfdDataResp.PfdDataForAppExt, nil, nil
+	return pfdDataResp.Udr_DR_PfdDataForAppExt, nil, nil
 }
 
 // AppDataPfdsAppIdPut Creates, updates an individual PFD given an appId and the content to store into the UDR.
 // 3GPP TS 29.519 release 17 version 17.6.0
 // Resource structure: 6.2.2
 // Request/Response: 6.2.4.3.3
-func (s *nudrService) AppDataPfdsAppIdPut(appID string, pfdDataForApp *models.PfdDataForAppExt) (
-	*models.PfdDataForAppExt, *models.ProblemDetails, error,
+func (s *nudrService) AppDataPfdsAppIdPut(appID string, pfdDataForApp *models.Udr_DR_PfdDataForAppExt) (
+	*models.Udr_DR_PfdDataForAppExt, *models.ProblemDetails, error,
 ) {
 	uri, err := s.getUdrDrUri()
 	if err != nil {
@@ -251,14 +254,14 @@ func (s *nudrService) AppDataPfdsAppIdPut(appID string, pfdDataForApp *models.Pf
 		return nil, nil, openapi.ReportError("could not initialize the DataRepository client")
 	}
 
-	ctx, _, err := s.consumer.Context().GetTokenCtx(models.ServiceName_NUDR_DR, models.NrfNfManagementNfType_UDR)
+	ctx, _, err := s.consumer.Context().GetTokenCtx(models.Nrf_NFMgmt_ServiceName_NUDR_DR, models.Nrf_NFMgmt_NFType_UDR)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	individualPfdDataReq := DataRepository.CreateOrReplaceIndividualPFDDataRequest{
-		AppId:            &appID,
-		PfdDataForAppExt: pfdDataForApp,
+	individualPfdDataReq := DR.CreateOrReplaceIndividualPFDDataRequest{
+		AppId:       &appID,
+		RequestBody: pfdDataForApp,
 	}
 
 	individualPfdDataRsp, errIndividualPfdData := client.IndividualPFDDataDocumentApi.
@@ -269,8 +272,8 @@ func (s *nudrService) AppDataPfdsAppIdPut(appID string, pfdDataForApp *models.Pf
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case DataRepository.CreateOrReplaceIndividualPFDDataError:
-				return nil, &errorModel.ProblemDetails, nil
+			case DR.CreateOrReplaceIndividualPFDDataError:
+				return nil, errorModel.ProblemDetails, nil
 			case error:
 				return nil, openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:
@@ -283,7 +286,7 @@ func (s *nudrService) AppDataPfdsAppIdPut(appID string, pfdDataForApp *models.Pf
 		}
 	}
 
-	return &individualPfdDataRsp.PfdDataForAppExt, nil, nil
+	return individualPfdDataRsp.Udr_DR_PfdDataForAppExt, nil, nil
 }
 
 // AppDataPfdsAppIdDelete Deletes the individual PFD Data resource related to the application identifier.
@@ -302,12 +305,12 @@ func (s *nudrService) AppDataPfdsAppIdDelete(appID string) (*models.ProblemDetai
 		return nil, openapi.ReportError("could not initialize the DataRepository client")
 	}
 
-	ctx, _, err := s.consumer.Context().GetTokenCtx(models.ServiceName_NUDR_DR, models.NrfNfManagementNfType_UDR)
+	ctx, _, err := s.consumer.Context().GetTokenCtx(models.Nrf_NFMgmt_ServiceName_NUDR_DR, models.Nrf_NFMgmt_NFType_UDR)
 	if err != nil {
 		return nil, err
 	}
 
-	DeletePdfDataReq := DataRepository.DeleteIndividualPFDDataRequest{
+	DeletePdfDataReq := DR.DeleteIndividualPFDDataRequest{
 		AppId: &appID,
 	}
 
@@ -318,8 +321,8 @@ func (s *nudrService) AppDataPfdsAppIdDelete(appID string) (*models.ProblemDetai
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case DataRepository.DeleteIndividualPFDDataError:
-				return &errorModel.ProblemDetails, nil
+			case DR.DeleteIndividualPFDDataError:
+				return errorModel.ProblemDetails, nil
 			case error:
 				return openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:
@@ -339,7 +342,7 @@ func (s *nudrService) AppDataPfdsAppIdDelete(appID string) (*models.ProblemDetai
 // Resource structure: 6.2.2
 // Request/Response: 6.2.4.3.1
 func (s *nudrService) AppDataPfdsAppIdGet(appID string) (
-	*DataRepository.ReadIndividualPFDDataResponse, *models.ProblemDetails, error,
+	*DR.ReadIndividualPFDDataResponse, *models.ProblemDetails, error,
 ) {
 	uri, err := s.getUdrDrUri()
 	if err != nil {
@@ -351,12 +354,12 @@ func (s *nudrService) AppDataPfdsAppIdGet(appID string) (
 		return nil, nil, openapi.ReportError("could not initialize the DataRepository client")
 	}
 
-	ctx, _, err := s.consumer.Context().GetTokenCtx(models.ServiceName_NUDR_DR, models.NrfNfManagementNfType_UDR)
+	ctx, _, err := s.consumer.Context().GetTokenCtx(models.Nrf_NFMgmt_ServiceName_NUDR_DR, models.Nrf_NFMgmt_NFType_UDR)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	pfdDataReq := DataRepository.ReadIndividualPFDDataRequest{
+	pfdDataReq := DR.ReadIndividualPFDDataRequest{
 		AppId: &appID,
 	}
 
@@ -367,8 +370,8 @@ func (s *nudrService) AppDataPfdsAppIdGet(appID string) (
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case DataRepository.ReadIndividualPFDDataError:
-				return nil, &errorModel.ProblemDetails, nil
+			case DR.ReadIndividualPFDDataError:
+				return nil, errorModel.ProblemDetails, nil
 			case error:
 				return nil, openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:
@@ -388,22 +391,22 @@ func (s *nudrService) AppDataPfdsAppIdGet(appID string) (
 // Resource structure: 6.2.2
 // Request/Response: 6.2.6.3.2
 func (s *nudrService) AppDataInfluenceDataPatch(
-	influenceID string, tiSubPatch *models.TrafficInfluDataPatch,
-) (*models.TrafficInfluData, *models.ProblemDetails, error) {
+	influenceID string, tiSubPatch *models.Udr_DR_TrafficInfluDataPatch,
+) (*models.Udr_DR_TrafficInfluData, *models.ProblemDetails, error) {
 	uri, err := s.getUdrDrUri()
 	if err != nil {
 		return nil, nil, err
 	}
 	client := s.getDataRepositoryClient(uri)
 
-	ctx, _, err := s.consumer.Context().GetTokenCtx(models.ServiceName_NUDR_DR, models.NrfNfManagementNfType_UDR)
+	ctx, _, err := s.consumer.Context().GetTokenCtx(models.Nrf_NFMgmt_ServiceName_NUDR_DR, models.Nrf_NFMgmt_NFType_UDR)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	tiDataReq := DataRepository.UpdateIndividualInfluenceDataRequest{
-		InfluenceId:           &influenceID,
-		TrafficInfluDataPatch: tiSubPatch,
+	tiDataReq := DR.UpdateIndividualInfluenceDataRequest{
+		InfluenceId: &influenceID,
+		RequestBody: tiSubPatch,
 	}
 
 	trafficDataRsp, errTiData := client.IndividualInfluenceDataDocumentApi.UpdateIndividualInfluenceData(ctx, &tiDataReq)
@@ -413,8 +416,8 @@ func (s *nudrService) AppDataInfluenceDataPatch(
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case DataRepository.UpdateIndividualInfluenceDataError:
-				return nil, &errorModel.ProblemDetails, nil
+			case DR.UpdateIndividualInfluenceDataError:
+				return nil, errorModel.ProblemDetails, nil
 			case error:
 				return nil, openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:
@@ -427,10 +430,10 @@ func (s *nudrService) AppDataInfluenceDataPatch(
 		}
 	}
 
-	var trafficInfluData *models.TrafficInfluData
+	var trafficInfluData *models.Udr_DR_TrafficInfluData
 
 	if trafficDataRsp != nil {
-		trafficInfluData = &trafficDataRsp.TrafficInfluData
+		trafficInfluData = trafficDataRsp.Udr_DR_TrafficInfluData
 	}
 
 	return trafficInfluData, nil, nil
@@ -451,12 +454,12 @@ func (s *nudrService) AppDataInfluenceDataDelete(influenceID string) (*models.Pr
 		return nil, openapi.ReportError("could not initialize the DataRepository client")
 	}
 
-	ctx, _, err := s.consumer.Context().GetTokenCtx(models.ServiceName_NUDR_DR, models.NrfNfManagementNfType_UDR)
+	ctx, _, err := s.consumer.Context().GetTokenCtx(models.Nrf_NFMgmt_ServiceName_NUDR_DR, models.Nrf_NFMgmt_NFType_UDR)
 	if err != nil {
 		return nil, err
 	}
 
-	deleteInfluenceReq := DataRepository.DeleteIndividualInfluenceDataRequest{
+	deleteInfluenceReq := DR.DeleteIndividualInfluenceDataRequest{
 		InfluenceId: &influenceID,
 	}
 
@@ -468,8 +471,8 @@ func (s *nudrService) AppDataInfluenceDataDelete(influenceID string) (*models.Pr
 		// API error
 		case openapi.GenericOpenAPIError:
 			switch errorModel := apiErr.Model().(type) {
-			case DataRepository.DeleteIndividualInfluenceDataError:
-				return &errorModel.ProblemDetails, nil
+			case DR.DeleteIndividualInfluenceDataError:
+				return errorModel.ProblemDetails, nil
 			case error:
 				return openapi.ProblemDetailsSystemFailure(errorModel.Error()), nil
 			default:

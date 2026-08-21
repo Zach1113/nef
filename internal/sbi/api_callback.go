@@ -21,7 +21,7 @@ func (s *Server) getCallbackRoutes() []Route {
 }
 
 func (s *Server) apiPostSmfNotification(gc *gin.Context) {
-	var eeNotif models.NsmfEventExposureNotification
+	var eeNotif models.Smf_EvtExpos_NsmfEventExposureNotification
 	reqBody, err := gc.GetRawData()
 	if err != nil {
 		logger.SBILog.Errorf("Get Request Body error: %+v", err)

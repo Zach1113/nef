@@ -46,7 +46,7 @@ func (s *Server) apiGetIndividualApplicationPFD(gc *gin.Context) {
 }
 
 func (s *Server) apiPostPFDSubscriptions(gc *gin.Context) {
-	var pfdSubsc models.PfdSubscription
+	var pfdSubsc models.Nef_PFDMgmt_PfdSubscription
 	reqBody, err := gc.GetRawData()
 	if err != nil {
 		logger.SBILog.Errorf("Get Request Body error: %+v", err)

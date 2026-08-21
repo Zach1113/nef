@@ -19,7 +19,7 @@ type nef interface {
 
 // NFContext is the interface used by middleware to perform inbound OAuth2 token checks.
 type NFContext interface {
-	AuthorizationCheck(token string, serviceName models.ServiceName) error
+	AuthorizationCheck(token string, serviceName models.Nrf_NFMgmt_ServiceName) error
 }
 
 var _ NFContext = &NefContext{}
@@ -159,7 +159,7 @@ func (c *NefContext) FindAfSub(CorrID string) (*AfData, *AfSubscription) {
 	return nil, nil
 }
 
-func (c *NefContext) GetTokenCtx(serviceName models.ServiceName, targetNF models.NrfNfManagementNfType) (
+func (c *NefContext) GetTokenCtx(serviceName models.Nrf_NFMgmt_ServiceName, targetNF models.Nrf_NFMgmt_NFType) (
 	context.Context, *models.ProblemDetails, error,
 ) {
 	if !c.OAuth2Required {
@@ -168,8 +168,8 @@ func (c *NefContext) GetTokenCtx(serviceName models.ServiceName, targetNF models
 	return oauth.GetTokenCtx(c.tokenRequest(serviceName, targetNF))
 }
 
-func (c *NefContext) GetTokenCtxForNFInstance(serviceName models.ServiceName,
-	targetNF models.NrfNfManagementNfType, targetNFInstanceID string,
+func (c *NefContext) GetTokenCtxForNFInstance(serviceName models.Nrf_NFMgmt_ServiceName,
+	targetNF models.Nrf_NFMgmt_NFType, targetNFInstanceID string,
 ) (context.Context, *models.ProblemDetails, error) {
 	if !c.OAuth2Required {
 		return context.TODO(), nil, nil
@@ -184,24 +184,24 @@ func (c *NefContext) GetTokenCtxForNFInstance(serviceName models.ServiceName,
 	return oauth.GetTokenCtx(c.tokenRequestForNFInstance(serviceName, targetNF, targetNFInstanceID))
 }
 
-func (c *NefContext) GetTokenCtxForNRF(serviceName models.ServiceName) (
+func (c *NefContext) GetTokenCtxForNRF(serviceName models.Nrf_NFMgmt_ServiceName) (
 	context.Context, *models.ProblemDetails, error,
 ) {
 	return c.GetTokenCtxForNFInstance(
-		serviceName, models.NrfNfManagementNfType_NRF, c.Config().NrfNfInstanceID())
+		serviceName, models.Nrf_NFMgmt_NFType_NRF, c.Config().NrfNfInstanceID())
 }
 
-func (c *NefContext) tokenRequest(serviceName models.ServiceName,
-	targetNF models.NrfNfManagementNfType,
+func (c *NefContext) tokenRequest(serviceName models.Nrf_NFMgmt_ServiceName,
+	targetNF models.Nrf_NFMgmt_NFType,
 ) oauth.TokenRequest {
 	return oauth.TokenRequest{
-		ConsumerNFType: models.NrfNfManagementNfType_NEF, ConsumerNFInstanceID: c.nfInstID,
+		ConsumerNFType: models.Nrf_NFMgmt_NFType_NEF, ConsumerNFInstanceID: c.nfInstID,
 		TargetNFType: targetNF, NRFURI: c.Config().NrfUri(), Scope: string(serviceName),
 	}
 }
 
-func (c *NefContext) tokenRequestForNFInstance(serviceName models.ServiceName,
-	targetNF models.NrfNfManagementNfType, targetNFInstanceID string,
+func (c *NefContext) tokenRequestForNFInstance(serviceName models.Nrf_NFMgmt_ServiceName,
+	targetNF models.Nrf_NFMgmt_NFType, targetNFInstanceID string,
 ) oauth.TokenRequest {
 	request := c.tokenRequest(serviceName, targetNF)
 	request.TargetNFInstanceID = targetNFInstanceID
@@ -228,7 +228,7 @@ func (c *NefContext) SetOAuth2Required(required bool) error {
 
 // AuthorizationCheck validates the inbound OAuth2 bearer token against serviceName.
 // When OAuth2 is disabled it returns nil immediately (pass-through for dev/test).
-func (c *NefContext) AuthorizationCheck(token string, serviceName models.ServiceName) error {
+func (c *NefContext) AuthorizationCheck(token string, serviceName models.Nrf_NFMgmt_ServiceName) error {
 	if !c.OAuth2Required {
 		logger.CtxLog.Debugf("NefContext::AuthorizationCheck: OAuth2 not required")
 		return nil
@@ -238,6 +238,6 @@ func (c *NefContext) AuthorizationCheck(token string, serviceName models.Service
 		token != "", len(token), serviceName,
 	)
 	return oauth.VerifyOAuth(token, string(serviceName), oauth.AudiencePolicy{
-		NFInstanceID: c.nfInstID, NFType: models.NrfNfManagementNfType_NEF,
+		NFInstanceID: c.nfInstID, NFType: models.Nrf_NFMgmt_NFType_NEF,
 	}, c.Config().NrfNfInstanceID(), c.Config().NrfCertPem())
 }

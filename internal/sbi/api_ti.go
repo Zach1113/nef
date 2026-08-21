@@ -51,7 +51,7 @@ func (s *Server) apiGetTrafficInfluenceSubscription(gc *gin.Context) {
 }
 
 func (s *Server) apiPostTrafficInfluenceSubscription(gc *gin.Context) {
-	var tiSub models.NefTrafficInfluSub
+	var tiSub models.Nef_TrafInfl_TrafficInfluSub
 	reqBody, err := gc.GetRawData()
 	if err != nil {
 		logger.SBILog.Errorf("Get Request Body error: %+v", err)
@@ -80,7 +80,7 @@ func (s *Server) apiGetIndividualTrafficInfluenceSubscription(gc *gin.Context) {
 }
 
 func (s *Server) apiPutIndividualTrafficInfluenceSubscription(gc *gin.Context) {
-	var tiSub models.NefTrafficInfluSub
+	var tiSub models.Nef_TrafInfl_TrafficInfluSub
 	reqBody, err := gc.GetRawData()
 	if err != nil {
 		logger.SBILog.Errorf("Get Request Body error: %+v", err)
@@ -104,7 +104,7 @@ func (s *Server) apiPutIndividualTrafficInfluenceSubscription(gc *gin.Context) {
 }
 
 func (s *Server) apiPatchIndividualTrafficInfluenceSubscription(gc *gin.Context) {
-	var tiSubPatch models.NefTrafficInfluSubPatch
+	var tiSubPatch models.Nef_TrafInfl_TrafficInfluSubPatch
 	reqBody, err := gc.GetRawData()
 	if err != nil {
 		logger.SBILog.Errorf("Get Request Body error: %+v", err)
